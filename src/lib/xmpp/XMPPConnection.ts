@@ -7,7 +7,7 @@ import { parseXml } from "../stanza/parseXml"
 export class XMPPConnection {
   private websocket: Websocket
 
-  constructor(options: { connectionTimeout: number }) {
+  constructor(_options: { connectionTimeout: number }) {
     this.websocket = new Websocket()
   }
 

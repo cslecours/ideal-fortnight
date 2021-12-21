@@ -30,19 +30,19 @@ export class Websocket extends TypedEventTarget {
     this.socket?.send(data)
   }
 
-  onMessage(ev: MessageEvent<string>): any {
+  onMessage(ev: MessageEvent<string>): void {
     console.log("DATA\t", ev.data)
     this.dispatchEvent(new ReceivedMessageEvent(ev.data))
   }
-  onError(ev: Event): any {
+  onError(_ev: Event): void {
     console.error("ERROR")
     this.dispatchEvent(new ConnectionChangeEvent(ConnectionStatus.Failed))
   }
-  onClose(ev: CloseEvent): any {
+  onClose(_ev: CloseEvent): void {
     console.log("CLOSE")
     this.dispatchEvent(new ConnectionChangeEvent(ConnectionStatus.Closed))
   }
-  onOpen(ev: Event): any {
+  onOpen(_ev: Event): void {
     console.log("OPEN")
     this.dispatchEvent(new ConnectionChangeEvent(ConnectionStatus.Open))
   }

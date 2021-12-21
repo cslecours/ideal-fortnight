@@ -9,11 +9,14 @@
   ],
   "ignorePatterns": ["dist/"],
   "parser": "@typescript-eslint/parser",
-  "parserOptions": {"project":"./tsconfig.json"},
+  "parserOptions": { "project": "./tsconfig.json" },
   "plugins": ["@typescript-eslint", "jest", "prettier"],
   "rules": {
     "no-unused-vars": "off",
-    "@typescript-eslint/no-unused-vars": ["warn", {"varsIgnorePattern": "^_", "argsIgnorePattern": "^_","caughtErrorsIgnorePattern": "^_"}],
+    "@typescript-eslint/no-unused-vars": [
+      "warn",
+      { "varsIgnorePattern": "^_", "argsIgnorePattern": "^_", "caughtErrorsIgnorePattern": "^_" }
+    ],
     "no-undef": "off",
     "prettier/prettier": "warn"
   }

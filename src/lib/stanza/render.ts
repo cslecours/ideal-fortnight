@@ -21,9 +21,11 @@ export function createDocumentElement(stanza: Stanza, doc = getDummyXMLDomDocume
   if (children) {
     const childrenElements = createDocumentElement(children, doc)
     if (Array.isArray(childrenElements)) {
-      element.append(...childrenElements)
+      childrenElements.forEach((child) => {
+        element.appendChild(child)
+      })
     } else {
-      element.append(childrenElements)
+      element.appendChild(childrenElements)
     }
   }
 

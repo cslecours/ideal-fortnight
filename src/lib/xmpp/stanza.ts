@@ -7,8 +7,8 @@ export function openStanza(to: string) {
   return h("open", { xmlns: Namespaces.FRAMING, to, version: "1.0" })
 }
 
-export function authStanza(mechanism: string, children: Stanza) {
-  return h("auth", { xmlns: Namespaces.SASL, mechanism: mechanism }, children)
+export function plainAuthStanza(children: Stanza) {
+  return h("auth", { xmlns: Namespaces.SASL, mechanism: "PLAIN" }, children)
 }
 
 export function authResponseStanza(response: string) {

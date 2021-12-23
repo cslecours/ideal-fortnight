@@ -1,16 +1,23 @@
-import { ConnectionChangeEvent, ConnectionStatus, ReceivedMessageEvent } from "./events"
+import { Subject } from "rxjs"
+import { ConnectionStatus } from "./events"
 import { getWebSocketConstructor } from "./websocket.ponyfill"
 
 const WebSocket = getWebSocketConstructor()
 
-abstract class TypedEventTarget extends EventTarget {
-  public addTypedEventListener<T extends Event>(type: T["type"], callback: (evt: T) => void, options?: AddEventListenerOptions | boolean) {
-    this.addEventListener(type, callback as EventListener, options)
-  }
-}
-
-export class Websocket extends TypedEventTarget {
+export class Websocket {
   private socket: WebSocket | undefined
+
+  private _messageSubject = new Subject<string>()
+  private _errorSubject = new Subject<unknown>()
+  private _connectionStatusSubject = new Subject<ConnectionStatus>()
+
+  public get connectionStatus$() {
+    return this._connectionStatusSubject.asObservable()
+  }
+
+  public get message$() {
+    return this._messageSubject.asObservable()
+  }
 
   connect(url: string | URL, protocols: string[]) {
     const socket = new WebSocket(url, protocols)
@@ -32,18 +39,20 @@ export class Websocket extends TypedEventTarget {
 
   onMessage(ev: MessageEvent<string>): void {
     console.log("DATA\t", ev.data)
-    this.dispatchEvent(new ReceivedMessageEvent(ev.data))
+    this._messageSubject.next(ev.data)
   }
-  onError(_ev: Event): void {
+
+  onError(ev: Event): void {
     console.error("ERROR")
-    this.dispatchEvent(new ConnectionChangeEvent(ConnectionStatus.Failed))
+    this._connectionStatusSubject.next(ConnectionStatus.Failed)
+    this._errorSubject.next(ev)
   }
   onClose(_ev: CloseEvent): void {
     console.log("CLOSE")
-    this.dispatchEvent(new ConnectionChangeEvent(ConnectionStatus.Closed))
+    this._connectionStatusSubject.next(ConnectionStatus.Closed)
   }
   onOpen(_ev: Event): void {
     console.log("OPEN")
-    this.dispatchEvent(new ConnectionChangeEvent(ConnectionStatus.Open))
+    this._connectionStatusSubject.next(ConnectionStatus.Open)
   }
 }

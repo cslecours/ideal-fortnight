@@ -1,10 +1,10 @@
 /* eslint @typescript-eslint/no-var-requires: "off" */
 export const getDummyXMLDomDocument = () => {
   if (typeof globalThis.DOMImplementation !== "undefined") {
-    return document.implementation.createDocument(null, null)
+    return document.implementation.createDocument(null, null) as Document
   } else {
     const XMLImplementation = require("@xmldom/xmldom").DOMImplementation
-    return new XMLImplementation().createDocument(null, null)
+    return new XMLImplementation().createDocument(null, null) as Document
   }
 }
 

@@ -1,51 +1,47 @@
-import { ConnectionChangeEvent, ConnectionStatus, ReceivedMessageEvent } from "../websocket/events"
+import { ConnectionStatus } from "../websocket/events"
 import { Websocket } from "../websocket/websocket"
 import { render } from "../stanza/render"
-import { openStanza } from "./stanza"
-import { parseXml } from "../stanza/parseXml"
+import { openStanza, plainAuthStanza } from "./stanza"
+import { filter, first, map } from "rxjs/operators"
+import { firstValueFrom } from "rxjs"
+import { featureDetection, isStreamFeatures } from "./featureDetection"
+import { AuthData, plainAuthChallenge, tryParseSASL } from "./auth"
+import { Stanza } from "../stanza/stanza"
 
 export class XMPPConnection {
   private websocket: Websocket
+
+  private features?: { mechanisms: string[] }
 
   constructor(_options: { connectionTimeout: number }) {
     this.websocket = new Websocket()
   }
 
-  async connect({ url, domain }: { url: string | URL; domain: string }): Promise<void> {
-    await new Promise((resolve, reject) => {
-      this.websocket.addTypedEventListener(
-        "connection",
-        (ev: ConnectionChangeEvent) => {
-          if (ev.status === ConnectionStatus.Open) {
-            resolve(undefined)
-          } else {
-            reject(new Error("MAGIC"))
-          }
-        },
-        { once: true }
+  private async sendAndWait<T>(stanza: Stanza, mapper: (str: string) => T | null) {
+    const resultPromise = firstValueFrom(
+      this.websocket.message$.pipe(
+        map(mapper),
+        filter(<T>(x: T | null): x is NonNullable<T> => !!x)
       )
+    )
 
-      this.websocket.addTypedEventListener(
-        "message",
-        (ev: MessageEvent) => {
-          console.log("RECEIVED", ev.data)
-        },
-        { once: true }
-      )
-
-      this.websocket.connect(url, ["xmpp"])
-    })
-
-    this.addMessageHandler((message) => {
-      const stanza = parseXml(message)
-      const openNodes = stanza.firstChild?.nodeName === "open"
-      const streamFeaturesNodes = stanza.firstChild?.nodeName === "stream:features"
-      console.log({ openNodes, streamFeaturesNodes, message })
-    })
-    this.websocket.send(render(openStanza(domain)))
+    this.websocket.send(render(stanza))
+    return await resultPromise
   }
 
-  private addMessageHandler(handler: (message: string) => void): void {
-    this.websocket.addTypedEventListener("message", (evt: ReceivedMessageEvent) => handler(evt.data))
+  async connect({ url, auth }: { url: string | URL; auth: AuthData }): Promise<void> {
+    this.websocket.connect(url, ["xmpp"])
+    this.websocket.message$.subscribe((m) => console.log("MESSAGE\t", m))
+    await firstValueFrom(this.websocket.connectionStatus$.pipe(first((x) => x === ConnectionStatus.Open)))
+
+    this.sendAndWait(openStanza(auth.domain), (str) => (isStreamFeatures(str) ? featureDetection(str) : null))
+    this.features = await firstValueFrom(this.websocket.message$.pipe(first(isStreamFeatures), map(featureDetection)))
+    if (this.features.mechanisms.includes("PLAIN")) {
+      const authResult = await this.sendAndWait(plainAuthStanza(plainAuthChallenge(auth)), tryParseSASL)
+
+      console.warn("ZE AUTH" + authResult)
+    } else {
+      throw new Error("UNSUPPORTED SASL")
+    }
   }
 }

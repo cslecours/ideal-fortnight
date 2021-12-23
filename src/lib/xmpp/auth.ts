@@ -29,7 +29,6 @@ export function plainAuthChallenge({ authcid, pass }: AuthData) {
 
 export function xOauth2Challenge({ authzid, pass }: AuthData) {
   const auth_str = ["", authzid, pass].join("\u0000")
-  console.log('CHALLENGE\t', [authzid, pass], auth_str)
   return toB64(utf16to8(auth_str))
 }
 

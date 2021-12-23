@@ -1,7 +1,7 @@
 import { ConnectionStatus } from "../websocket/events"
 import { Websocket } from "../websocket/websocket"
 import { render } from "../stanza/render"
-import { authResponseStanza, authStanza, bindStanza, iqStanza, openStanza, sessionStanza } from "./stanza"
+import { authStanza, bindStanza, iqStanza, openStanza, sessionStanza } from "./stanza"
 import { filter, first, map } from "rxjs/operators"
 import { firstValueFrom } from "rxjs"
 import { featureDetection, hasFeature, isStreamFeatures } from "./featureDetection"
@@ -9,7 +9,7 @@ import { AuthData, plainAuthChallenge, tryParseSASL, xOauth2Challenge } from "./
 import { Stanza, StanzaElement } from "../stanza/stanza"
 import { Namespaces } from "./namespaces"
 import { parseXml } from "../stanza/parseXml"
-import { nanoid } from "nanoid"
+import { randomUUID } from "../crypto/crypto.ponyfill"
 
 export class XMPPConnection {
   private websocket: Websocket
@@ -34,7 +34,7 @@ export class XMPPConnection {
   }
 
   private async sendIq(type: "set" | "get", stanza: StanzaElement) {
-    const uniqueId = `${stanza.tagName}_${nanoid()}`
+    const uniqueId = `${stanza.tagName}_${randomUUID()}`
     return await this.sendAndWait(iqStanza(type, { id: uniqueId }, stanza), (message) => {
       const result = parseXml(message)
 

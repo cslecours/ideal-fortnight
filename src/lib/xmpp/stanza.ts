@@ -15,9 +15,13 @@ export function authResponseStanza(response: string) {
   return h("response", { xmlns: Namespaces.SASL }, fromB64(response))
 }
 
-type IqStanzaAttrs = { id: string } & ({ to: string } | { from: string })
+type IqStanzaAttrs = { id: string } & ({ to: string } | { from: string } | Record<string, string | never>)
 export function iqStanza(type: "set" | "get", attrs: IqStanzaAttrs, children: Stanza) {
   return h("iq", { type, xmlns: Namespaces.CLIENT, ...attrs }, children)
+}
+
+export function setBindStanza(id: string, ressource: string) {
+  return iqStanza("set", { id }, h("bind", { xmlns: Namespaces.BIND }, h("ressource", {}, ressource)))
 }
 
 type PresenceAttrs = { hash: "SHA-1"; ver: string }

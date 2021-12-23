@@ -7,6 +7,7 @@ export interface AuthData {
   authzid?: string
   authcid: string
   pass: string
+  ressource: string
 }
 
 function childNodeIsElement(childNode: ChildNode): childNode is Element {
@@ -14,7 +15,7 @@ function childNodeIsElement(childNode: ChildNode): childNode is Element {
 }
 
 export function tryParseSASL(message: string): Element | null {
-  const childNode = parseXml(message).firstChild
+  const childNode = parseXml(message)
   if (!childNode || !childNodeIsElement(childNode) || childNode.getAttribute(Namespaces.SASL) === null) return null
   return childNode
 }

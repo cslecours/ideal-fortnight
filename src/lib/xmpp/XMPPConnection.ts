@@ -1,11 +1,11 @@
 import { ConnectionStatus } from "../websocket/events"
 import { Websocket } from "../websocket/websocket"
 import { render } from "../stanza/render"
-import { bindStanza, iqStanza, openStanza, plainAuthStanza, sessionStanza } from "./stanza"
+import { authResponseStanza, authStanza, bindStanza, iqStanza, openStanza, sessionStanza } from "./stanza"
 import { filter, first, map } from "rxjs/operators"
 import { firstValueFrom } from "rxjs"
 import { featureDetection, hasFeature, isStreamFeatures } from "./featureDetection"
-import { AuthData, plainAuthChallenge, tryParseSASL } from "./auth"
+import { AuthData, plainAuthChallenge, tryParseSASL, xOauth2Challenge } from "./auth"
 import { Stanza, StanzaElement } from "../stanza/stanza"
 import { Namespaces } from "./namespaces"
 import { parseXml } from "../stanza/parseXml"
@@ -47,10 +47,10 @@ export class XMPPConnection {
     await firstValueFrom(this.websocket.connectionStatus$.pipe(first((x) => x === ConnectionStatus.Open)))
 
     this.features = await this.sendAndWait(openStanza(auth.domain), (str) => (isStreamFeatures(str) ? featureDetection(str) : null))
-    if (!hasFeature(this.features, "mechanisms", Namespaces.SASL)?.includes("PLAIN")) {
-      throw new Error("UNSUPPORTED SASL")
-    }
-    const authResult = await this.sendAndWait(plainAuthStanza(plainAuthChallenge(auth)), tryParseSASL)
+    const supportsXOauth2 = hasFeature(this.features, "mechanisms", Namespaces.SASL)?.includes("X-OAUTH2")
+    const [mechanism, onChallenge] = supportsXOauth2 ? ["X-OAUTH2", xOauth2Challenge] : ["PLAIN", plainAuthChallenge]
+
+    const authResult = await this.sendAndWait(authStanza(mechanism, onChallenge(auth)), tryParseSASL)
     console.warn("ZE AUTH" + authResult)
 
     this.features = await this.sendAndWait(openStanza(auth.domain), (str) => (isStreamFeatures(str) ? featureDetection(str) : null))

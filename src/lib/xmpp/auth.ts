@@ -27,17 +27,9 @@ export function plainAuthChallenge({ authcid, pass }: AuthData) {
   return toB64(utf16to8(auth_str))
 }
 
-export function saslChallenge(mechanism: "PLAIN" | "X-OAUTH2", auth: AuthData) {
-  if (mechanism === "X-OAUTH2") {
-    return xOauth2Challenge(auth)
-  } else {
-    return plainAuthChallenge(auth)
-  }
-}
-
 export function xOauth2Challenge({ authzid, pass }: AuthData) {
-  const auth_str = ["", authzid, pass].join("\0x0000")
-
+  const auth_str = ["", authzid, pass].join("\u0000")
+  console.log('CHALLENGE\t', [authzid, pass], auth_str)
   return toB64(utf16to8(auth_str))
 }
 

@@ -7,12 +7,12 @@ export function openStanza(to: string) {
   return h("open", { xmlns: Namespaces.FRAMING, to, version: "1.0" })
 }
 
-export function plainAuthStanza(children: Stanza) {
-  return h("auth", { xmlns: Namespaces.SASL, mechanism: "PLAIN" }, children)
+export function authStanza(mechanism: string, children: Stanza) {
+  return h("auth", { xmlns: Namespaces.SASL, mechanism }, children)
 }
 
 export function authResponseStanza(response: string) {
-  return h("response", { xmlns: Namespaces.SASL }, fromB64(response))
+  return h("response", { xmlns: Namespaces.SASL }, response)
 }
 
 type IqStanzaAttrs = { id: string } & ({ to: string } | { from: string } | Record<string, string | never>)

@@ -1,14 +1,15 @@
 import { ConnectionStatus } from "../websocket/events"
 import { Websocket } from "../websocket/websocket"
 import { render } from "../stanza/render"
-import { openStanza, plainAuthStanza, setBindStanza } from "./stanza"
+import { bindStanza, iqStanza, openStanza, plainAuthStanza, sessionStanza } from "./stanza"
 import { filter, first, map } from "rxjs/operators"
 import { firstValueFrom } from "rxjs"
 import { featureDetection, hasFeature, isStreamFeatures } from "./featureDetection"
 import { AuthData, plainAuthChallenge, tryParseSASL } from "./auth"
-import { Stanza } from "../stanza/stanza"
+import { Stanza, StanzaElement } from "../stanza/stanza"
 import { Namespaces } from "./namespaces"
 import { parseXml } from "../stanza/parseXml"
+import { nanoid } from "nanoid"
 
 export class XMPPConnection {
   private websocket: Websocket
@@ -17,6 +18,7 @@ export class XMPPConnection {
 
   constructor(_options: { connectionTimeout: number }) {
     this.websocket = new Websocket()
+    this.websocket.message$.subscribe((m) => console.log("MESSAGE\t", m))
   }
 
   private async sendAndWait<T>(stanza: Stanza, mapper: (str: string) => T | null) {
@@ -31,9 +33,17 @@ export class XMPPConnection {
     return await resultPromise
   }
 
+  private async sendIq(type: "set" | "get", stanza: StanzaElement) {
+    const uniqueId = `${stanza.tagName}_${nanoid()}`
+    return await this.sendAndWait(iqStanza(type, { id: uniqueId }, stanza), (message) => {
+      const result = parseXml(message)
+
+      return result.tagName === "iq" && result.getAttribute("id") === uniqueId ? result : null
+    })
+  }
+
   async connect({ url, auth }: { url: string | URL; auth: AuthData }): Promise<void> {
     this.websocket.connect(url, ["xmpp"])
-    this.websocket.message$.subscribe((m) => console.log("MESSAGE\t", m))
     await firstValueFrom(this.websocket.connectionStatus$.pipe(first((x) => x === ConnectionStatus.Open)))
 
     this.features = await this.sendAndWait(openStanza(auth.domain), (str) => (isStreamFeatures(str) ? featureDetection(str) : null))
@@ -50,19 +60,15 @@ export class XMPPConnection {
 
     console.log("SENDING BIND")
 
-    const bindIqId = "_bind_auth_2"
-    const bindResult = await this.sendAndWait(setBindStanza(bindIqId, auth.ressource), (message: string) => {
-      const result = parseXml(message)
-      console.log("TESTING", result.getAttribute("id"))
-      return result.getAttribute("id") === bindIqId ? result : null
-    })
-
+    const bindResult = await this.sendIq("set", bindStanza(auth.ressource))
     console.log("BIND_RESULT", bindResult)
 
-    //<iq type='set' id='_bind_auth_2' xmlns='jabber:client'>
-    //  <bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'>
-    //    <resource>web-client||3896</resource>
-    //  </bind>
-    //</iq>
+    if (!hasFeature(this.features, "session", Namespaces.SESSION)) {
+      throw new Error("SESSION EXPECTED")
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const sessionResult = await this.sendIq("set", sessionStanza())
+    //await this.websocket.send(render(presenceStanza()))
   }
 }

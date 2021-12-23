@@ -19,7 +19,7 @@ export function featureDetection(message: string) {
 export function hasFeature(features: ReturnType<typeof featureDetection>, featureName: string, xmlns?: string) {
   const feature = features.find((x) => x.name === featureName && (xmlns === undefined || x.xmlns === null || x.xmlns === xmlns))
   if (feature) {
-    const values = feature.value.flatMap(x => x.textContent)
+    const values = feature.value.flatMap((x) => x.textContent)
     return values
   }
   return null

@@ -20,8 +20,12 @@ export function iqStanza(type: "set" | "get", attrs: IqStanzaAttrs, children: St
   return h("iq", { type, xmlns: Namespaces.CLIENT, ...attrs }, children)
 }
 
-export function setBindStanza(id: string, ressource: string) {
-  return iqStanza("set", { id }, h("bind", { xmlns: Namespaces.BIND }, h("ressource", {}, ressource)))
+export function bindStanza(ressource: string) {
+  return h("bind", { xmlns: Namespaces.BIND }, h("ressource", {}, ressource))
+}
+
+export function sessionStanza() {
+  return h("session", { xmlns: Namespaces.SESSION })
 }
 
 type PresenceAttrs = { hash: "SHA-1"; ver: string }

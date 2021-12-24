@@ -1,6 +1,5 @@
 export const Namespaces = {
   HTTPBIND: "http://jabber.org/protocol/httpbind",
-  BOSH: "urn:xmpp:xbosh",
   CLIENT: "jabber:client",
   AUTH: "jabber:iq:auth",
   ROSTER: "jabber:iq:roster",

@@ -1,29 +1,39 @@
-import { toB64 } from "../b64"
-import { parseXml } from "../stanza/parseXml"
-import { Namespaces } from "./namespaces"
+import { toB64 } from "../../b64"
+import { isElement, parseXml } from "../../stanza/parseXml"
+import { Namespaces } from "../namespaces"
+import { SASLError } from "../xmpp.errors"
 
 export interface AuthData {
   domain: string
   authzid?: string
   authcid: string
   pass: string
-  ressource: string
+  resource: string
 }
 
-function childNodeIsElement(childNode: ChildNode): childNode is Element {
-  return "tagName" in childNode
+export function waitForAuthResult(message: string): Element | null {
+  const element = parseXml(message)
+  if (!element || !isElement(element) || element.getAttribute(Namespaces.SASL) === null) {
+    return null
+  }
+  return element
 }
 
-export function tryParseSASL(message: string): Element | null {
-  const childNode = parseXml(message)
-  if (!childNode || !childNodeIsElement(childNode) || childNode.getAttribute(Namespaces.SASL) === null) return null
-  return childNode
+export function detectAuthErrors(element: Element) {
+  if (element.tagName === "failure") {
+    throw new SASLError()
+  }
+  if (element.tagName === "success") {
+    return
+  }
+  throw new Error(`Not supported ${element.tagName}`)
 }
 
-export function plainAuthChallenge({ authcid, pass }: AuthData) {
+export function plainAuthChallenge({ authcid, authzid, domain, pass }: AuthData) {
   // Only include authzid if it differs from authcid.
   // See: https://tools.ietf.org/html/rfc6120#section-6.3.8
-  const auth_str = ["", authcid, pass].join("\u0000")
+
+  const auth_str = [authzid !== `${authcid}@${domain}` ? authzid : "", authcid, pass].join("\u0000")
   return toB64(utf16to8(auth_str))
 }
 

@@ -1,4 +1,3 @@
-import { fromB64 } from "../b64"
 import { createElement as h } from "../stanza/createElement"
 import { Stanza } from "../stanza/stanza"
 import { Namespaces } from "./namespaces"
@@ -28,7 +27,7 @@ export function sessionStanza() {
   return h("session", { xmlns: Namespaces.SESSION })
 }
 
-type PresenceAttrs = { hash: "SHA-1"; ver: string }
+type PresenceAttrs = { hash: "sha-1"; ver: string }
 export function presenceStanza({ hash, ver }: PresenceAttrs) {
   return h("presence", { xmlns: Namespaces.CLIENT }, h("c", { xmlns: Namespaces.CAPS, hash, ver }))
 }

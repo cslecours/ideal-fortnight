@@ -1,11 +1,13 @@
 // XEP-0115 https://xmpp.org/extensions/xep-0115.html
 
-import { sha1 } from "../crypto/crypto.ponyfill"
+import { sha1 } from "../../crypto/crypto.ponyfill"
 
-export function buildCapabilities(
-  identities: readonly { category: string; type: string; name?: string; lang?: string }[],
-  features: readonly string[]
-) {
+export interface Capabilities {
+  identities: { category: string; type: string; name?: string; lang?: string }[]
+  features: string[]
+}
+
+export function buildCapabilities(identities: Capabilities["identities"], features: Capabilities["features"]) {
   return {
     identities: identities.slice().sort((a, b) => {
       return (

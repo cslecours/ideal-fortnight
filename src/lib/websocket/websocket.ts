@@ -1,5 +1,5 @@
 import { Subject } from "rxjs"
-import { ConnectionStatus } from "./events"
+import { ConnectionStatus } from "./websocket.models"
 import { getWebSocketConstructor } from "./websocket.ponyfill"
 
 const WebSocket = getWebSocketConstructor()
@@ -32,27 +32,31 @@ export class Websocket {
     this.socket?.close()
   }
 
+  private colorConsole(code: string, text: string) {
+    return `${code}${text}\u001b[0m`
+  }
+
   send(data: string | ArrayBuffer | Blob | ArrayBufferView) {
-    console.log("SEND\t", data)
+    console.log(this.colorConsole("\u001b[32m", "⬆ Send".padEnd(20)), data, "\n")
     this.socket?.send(data)
   }
 
   onMessage(ev: MessageEvent<string>): void {
-    console.log("DATA\t", ev.data)
+    console.log(this.colorConsole("\u001b[31m", "⬇ Recv".padEnd(20)), ev.data, "\n")
     this._messageSubject.next(ev.data)
   }
 
   onError(ev: Event): void {
-    console.error("ERROR")
+    console.log(this.colorConsole("\u001b[31m", "ERROR".padEnd(20)), "\n")
     this._connectionStatusSubject.next(ConnectionStatus.Failed)
     this._errorSubject.next(ev)
   }
   onClose(_ev: CloseEvent): void {
-    console.log("CLOSE")
+    console.log(this.colorConsole("\u001b[31m", "CLOSE".padEnd(20)), "\n")
     this._connectionStatusSubject.next(ConnectionStatus.Closed)
   }
   onOpen(_ev: Event): void {
-    console.log("OPEN")
+    console.log(this.colorConsole("\u001b[31m", "OPEN".padEnd(20)), "\n")
     this._connectionStatusSubject.next(ConnectionStatus.Open)
   }
 }

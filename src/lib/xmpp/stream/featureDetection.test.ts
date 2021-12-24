@@ -1,5 +1,5 @@
 import { featureDetection, hasFeature, isStreamFeatures } from "./featureDetection"
-import { Namespaces } from "./namespaces"
+import { Namespaces } from "../namespaces"
 
 describe("featureDetection", () => {
   it("works", () => {

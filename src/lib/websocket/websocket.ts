@@ -42,6 +42,7 @@ export class Websocket {
   }
 
   onMessage(ev: MessageEvent<string>): void {
+    
     console.log(this.colorConsole("\u001b[31m", "⬇ Recv".padEnd(20)), ev.data, "\n")
     this._messageSubject.next(ev.data)
   }
@@ -51,6 +52,7 @@ export class Websocket {
     this._connectionStatusSubject.next(ConnectionStatus.Failed)
     this._errorSubject.next(ev)
   }
+
   onClose(_ev: CloseEvent): void {
     console.log(this.colorConsole("\u001b[31m", "CLOSE".padEnd(20)), "\n")
     this._connectionStatusSubject.next(ConnectionStatus.Closed)

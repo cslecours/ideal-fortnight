@@ -2,8 +2,8 @@ import { ConnectionStatus } from "../websocket/websocket.models"
 import { Websocket } from "../websocket/websocket"
 import { render } from "../xml/render"
 import { iqStanza, presenceStanza } from "./stanza"
-import { filter, first, map, timeout } from "rxjs/operators"
-import { firstValueFrom, identity, Observable } from "rxjs"
+import { filter, first, map, tap, timeout } from "rxjs/operators"
+import { firstValueFrom, identity, Observable, Subscription } from "rxjs"
 import { featureDetection, hasFeature, isStreamFeatures } from "./stream/featureDetection"
 import { XmlNode, XmlElement } from "../xml/xmlElement"
 import { Namespaces } from "./namespaces"
@@ -15,6 +15,8 @@ import { authStanza, bindStanza, openStanza, sessionStanza } from "./auth/XmlAut
 import { xmlStream } from "./xmlStream"
 import { AuthData } from "./auth/auth.models"
 import { doAuth } from "./auth/auth"
+import { getXMLParser, getXmlSerializer } from "../xml/shims"
+import { XMPPPluginAPI } from "./XMPP.api"
 
 export enum XMPPConnectionState {
   None,
@@ -26,10 +28,12 @@ export enum XMPPConnectionState {
   Disconnected,
 }
 
-export class XMPPConnection {
+export class XMPPConnection implements XMPPPluginAPI {
   private websocket: Websocket
 
   private jid?: string
+
+  private streamContext
 
   private status: XMPPConnectionState = XMPPConnectionState.None
 
@@ -42,6 +46,21 @@ export class XMPPConnection {
   constructor(_options: { connectionTimeout: number }) {
     this.websocket = new Websocket()
     this.element$ = xmlStream(this.websocket.message$)
+
+    this.on({ tagName: "iq", xmlns: Namespaces.CLIENT }, (e) => {
+      if (e.getAttribute("type") !== "get") {
+        return
+      }
+
+      const query = e.firstChild
+      if (!isElement(query)) {
+        return
+      }
+      const isDiscoNode = query.getAttribute("xmlns") === Namespaces.DISCO_INFO
+      if (isDiscoNode) {
+        console.warn("    " + getXmlSerializer().serializeToString(query))
+      }
+    })
   }
 
   public async sendAsync<T>(stanza: XmlNode, mapper: (str: Element) => T | null, msTimeout?: number | undefined) {
@@ -55,6 +74,28 @@ export class XMPPConnection {
 
     this.websocket.send(render(stanza))
     return await resultPromise
+  }
+
+  private subscription = new Subscription()
+
+  public async on({ tagName, xmlns }: { tagName: string; xmlns: string }, callback: (e: Element) => Element | void | undefined) {
+    this.subscription.add(
+      this.element$
+        .pipe(
+          filter((el) => {
+            const tagMatch = !tagName || el.tagName === tagName
+            const xmlnsMatch = !xmlns || el.getAttribute("xmlns") === xmlns
+            return tagMatch && xmlnsMatch
+          }),
+          tap((x) => {
+            const result = callback(x)
+            if (result) {
+              this.websocket.send(getXmlSerializer().serializeToString(result))
+            }
+          })
+        )
+        .subscribe()
+    )
   }
 
   private async sendIq(type: "set" | "get", stanza: XmlElement) {

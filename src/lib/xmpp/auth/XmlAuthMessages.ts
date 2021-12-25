@@ -3,7 +3,7 @@ import { XmlNode } from "../../xml/xmlElement"
 import { Namespaces } from "./../namespaces"
 
 export function openStanza(to: string) {
-  return h("open", { xmlns: Namespaces.FRAMING, to, version: "1.0" })
+  return h("open", { "xmlns": Namespaces.FRAMING, to, "version": "1.0", "xml:lang": "en" })
 }
 
 export function authStanza(mechanism: string, children: XmlNode) {

@@ -1,12 +1,8 @@
-import { parseXml } from "../../stanza/parseXml"
-
-export function isStreamFeatures(message: string) {
-  return message.startsWith("<stream:features ")
+export function isStreamFeatures(element: Element) {
+  return element.tagName === "stream:features"
 }
 
-export function featureDetection(message: string) {
-  const element = parseXml(message)
-
+export function featureDetection(element: Element) {
   const features = Array.from(element.childNodes) as Element[]
 
   return features.map((x) => ({
@@ -22,7 +18,9 @@ export function hasFeature(features: ReturnType<typeof featureDetection> | undef
   const feature =
     features
       ?.find((x) => x.name === featureName && (xmlns === undefined || x.xmlns === null || x.xmlns === xmlns))
-      ?.value.flatMap((x) => x.textContent) || null
+      ?.value.map((x) => x.textContent)
+      .filter(<T>(x: T): x is NonNullable<T> => !!x)
+      .flatMap((x) => x) || null
 
   return feature
 }

@@ -1,3 +1,5 @@
+// Not really used, likely to get deleted
+
 export function rejectWhenTimeout<T>(promise: Promise<T>, ms: number) {
   if (!ms) return promise
 

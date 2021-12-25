@@ -1,34 +1,55 @@
 import { ConnectionStatus } from "../websocket/websocket.models"
 import { Websocket } from "../websocket/websocket"
-import { render } from "../stanza/render"
-import { authStanza, bindStanza, iqStanza, openStanza, presenceStanza, sessionStanza } from "./stanza"
-import { filter, first, map } from "rxjs/operators"
-import { firstValueFrom, Observable } from "rxjs"
+import { render } from "../xml/render"
+import { iqStanza, presenceStanza } from "./stanza"
+import { filter, first, map, timeout } from "rxjs/operators"
+import { firstValueFrom, identity, Observable } from "rxjs"
 import { featureDetection, hasFeature, isStreamFeatures } from "./stream/featureDetection"
-import { AuthData, detectAuthErrors, plainAuthChallenge, waitForAuthResult, xOauth2Challenge } from "./auth/auth"
-import { Stanza, StanzaElement } from "../stanza/stanza"
+import { XmlNode, XmlElement } from "../xml/xmlElement"
 import { Namespaces } from "./namespaces"
-import { isElement, parseXml } from "../stanza/parseXml"
+import { isElement } from "../xml/parseXml"
 import { randomUUID } from "../crypto/crypto.ponyfill"
 import { buildCapabilities, toVerHash } from "./disco/capabilities"
 import { BindError, DefinedConditions, ErrorType, StanzaError } from "./xmpp.errors"
+import { authStanza, bindStanza, openStanza, sessionStanza } from "./auth/XmlAuthMessages"
+import { xmlStream } from "./xmlStream"
+import { AuthData } from "./auth/auth.models"
+import { doAuth } from "./auth/auth"
+
+export enum XMPPConnectionState {
+  None,
+  Connecting,
+  ConnectionFailed,
+  Authenticating,
+  Connected,
+  Disconnecting,
+  Disconnected,
+}
 
 export class XMPPConnection {
   private websocket: Websocket
+
+  private jid?: string
+
+  private status: XMPPConnectionState = XMPPConnectionState.None
 
   private features?: ReturnType<typeof featureDetection>
 
   private caps = buildCapabilities([], [Namespaces.CAPS])
 
+  private element$: Observable<Element>
+
   constructor(_options: { connectionTimeout: number }) {
     this.websocket = new Websocket()
+    this.element$ = xmlStream(this.websocket.message$)
   }
 
-  private async sendAndWait<T>(stanza: Stanza, mapper: (str: string) => T | null) {
+  public async sendAsync<T>(stanza: XmlNode, mapper: (str: Element) => T | null, msTimeout?: number | undefined) {
     const resultPromise = firstValueFrom(
-      this.websocket.message$.pipe(
+      this.element$.pipe(
         map(mapper),
-        filter(<T>(x: T | null): x is NonNullable<T> => !!x)
+        filter(<T>(x: T | null): x is NonNullable<T> => !!x),
+        msTimeout ? timeout(msTimeout) : identity
       )
     )
 
@@ -36,22 +57,11 @@ export class XMPPConnection {
     return await resultPromise
   }
 
-  private async sendIq(type: "set" | "get", stanza: StanzaElement) {
+  private async sendIq(type: "set" | "get", stanza: XmlElement) {
     const uniqueId = `${stanza.tagName}_${randomUUID()}`
-    return await this.sendAndWait(iqStanza(type, { id: uniqueId }, stanza), (message) => {
-      const result = parseXml(message)
-
+    return await this.sendAsync(iqStanza(type, { id: uniqueId }, stanza), (result) => {
       return result.tagName === "iq" && result.getAttribute("id") === uniqueId ? result : null
     })
-  }
-
-  private async doAuth(auth: AuthData) {
-    const features = await this.sendAndWait(openStanza(auth.domain), (str) => (isStreamFeatures(str) ? featureDetection(str) : null))
-    const supportsXOauth2 = hasFeature(features, "mechanisms", Namespaces.SASL)?.includes("X-OAUTH2")
-    const [mechanism, onChallenge] = supportsXOauth2 ? ["X-OAUTH2", xOauth2Challenge] : ["PLAIN", plainAuthChallenge]
-    const authResult = await this.sendAndWait(authStanza(mechanism, onChallenge(auth)), waitForAuthResult)
-    detectAuthErrors(authResult)
-    return authResult
   }
 
   // TODO Move this around
@@ -93,16 +103,33 @@ export class XMPPConnection {
     return sessionResult
   }
 
+  private async requestFeatures(auth: AuthData) {
+    this.features = await this.sendAsync(openStanza(auth.domain), (el) => (isStreamFeatures(el) ? featureDetection(el) : null))
+  }
+
   async connect({ url, auth }: { url: string | URL; auth: AuthData }): Promise<void> {
+    this.status = XMPPConnectionState.Connecting
+
     this.websocket.connect(url, ["xmpp"])
     await firstValueFrom(this.websocket.connectionStatus$.pipe(first((x) => x === ConnectionStatus.Open)))
 
-    await this.doAuth(auth)
-    this.features = await this.sendAndWait(openStanza(auth.domain), (str) => (isStreamFeatures(str) ? featureDetection(str) : null))
-    const [jid] = await Promise.all([this.doBind(auth), this.doSession()])
+    this.status = XMPPConnectionState.Authenticating
 
-    console.log("CURRENT JID\t", jid)
+    await this.requestFeatures(auth)
+    const mechanisms = hasFeature(this.features, "mechanisms", Namespaces.SASL) ?? []
+    await doAuth(this, mechanisms, auth)
+    await this.requestFeatures(auth)
+    const [jid] = await Promise.all([this.doBind(auth), this.doSession()])
+    if (jid) this.jid = jid
+
+    this.status = XMPPConnectionState.Connected
 
     this.websocket.send(render(presenceStanza({ hash: "sha-1", ver: await toVerHash(this.caps) })))
+  }
+
+  public subscribeToPresenceEvents(handler: (presence: any) => void) {
+    this.element$.pipe(filter((x) => x.getAttribute("to") === this.jid)).subscribe((presence) => {
+      handler(presence)
+    })
   }
 }

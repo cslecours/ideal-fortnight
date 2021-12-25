@@ -1,7 +1,7 @@
 import { getDummyXMLDomDocument, getXmlSerializer } from "./shims"
-import { Stanza } from "./stanza"
+import { XmlNode } from "./xmlElement"
 
-export function createDocumentElement(stanza: Stanza, doc = getDummyXMLDomDocument()): Element | Element[] | Text {
+export function createDocumentElement(stanza: XmlNode, doc = getDummyXMLDomDocument()): Element | Element[] | Text {
   if (typeof stanza === "string") {
     return doc.createTextNode(stanza)
   }
@@ -32,7 +32,7 @@ export function createDocumentElement(stanza: Stanza, doc = getDummyXMLDomDocume
   return element as Element
 }
 
-export function render(stanza: Stanza) {
+export function render(stanza: XmlNode) {
   const doc = getDummyXMLDomDocument()
   const serializer = getXmlSerializer()
 

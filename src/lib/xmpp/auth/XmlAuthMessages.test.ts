@@ -1,5 +1,5 @@
-import { render } from "../stanza/render"
-import { authResponseStanza } from "./stanza"
+import { render } from "../../xml/render"
+import { authResponseStanza } from "./XmlAuthMessages"
 
 describe("stanza", () => {
   it("creates auth response stanza", () => {

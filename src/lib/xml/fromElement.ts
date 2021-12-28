@@ -1,7 +1,7 @@
 import { isElement, isTextNode } from "./parseXml"
 
-export function fromElement(element: Element): BasicReturnType {
-  return fromElementToObject(element)
+export function fromElement<T>(element: Element): T & BasicReturnType {
+  return fromElementToObject(element) as T & BasicReturnType
 }
 
 interface BasicReturnType extends Record<Exclude<"items" | "children", string>, string | boolean | null> {

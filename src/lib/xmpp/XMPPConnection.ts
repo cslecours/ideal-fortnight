@@ -10,12 +10,12 @@ import { Namespaces } from "./namespaces"
 import { isElement } from "../xml/parseXml"
 import { randomUUID } from "../crypto/crypto.ponyfill"
 import { buildCapabilities, toVerHash } from "./disco/capabilities"
-import { BindError, DefinedConditions, detectErrors, ErrorType, StanzaError } from "./xmpp.errors"
-import { authStanza, bindStanza, openStanza, sessionStanza } from "./auth/XmlAuthMessages"
+import { BindError, detectErrors } from "./xmpp.errors"
+import { bindStanza, openStanza, sessionStanza } from "./auth/XmlAuthMessages"
 import { xmlStream } from "./xmlStream"
 import { AuthData } from "./auth/auth.models"
 import { doAuth } from "./auth/auth"
-import { getXMLParser, getXmlSerializer } from "../xml/shims"
+import { getXmlSerializer } from "../xml/shims"
 import { XMPPPluginAPI } from "./XMPP.api"
 import { StreamContext } from "./StreamContext"
 
@@ -79,7 +79,7 @@ export class XMPPConnection implements XMPPPluginAPI {
 
   private subscription = new Subscription()
 
-  public async on({ tagName, xmlns }: { tagName: string; xmlns: string }, callback: (e: Element) => Element | void | undefined) {
+  public async on({ tagName, xmlns }: { tagName: string; xmlns?: string }, callback: (e: Element) => Element | void | undefined) {
     this.subscription.add(
       this.element$
         .pipe(
@@ -99,7 +99,7 @@ export class XMPPConnection implements XMPPPluginAPI {
     )
   }
 
-  private async sendIq(type: "set" | "get", stanza: XmlElement) {
+  public async sendIq(type: "set" | "get", stanza: XmlElement) {
     const uniqueId = `${stanza.tagName}_${randomUUID()}`
     return await this.sendAsync(iqStanza(type, { id: uniqueId }, stanza), (result) => {
       return result.tagName === "iq" && result.getAttribute("id") === uniqueId ? result : null
@@ -156,11 +156,5 @@ export class XMPPConnection implements XMPPPluginAPI {
     this.status = XMPPConnectionState.Connected
 
     this.websocket.send(render(presenceStanza({ hash: "sha-1", ver: await toVerHash(this.caps) })))
-  }
-
-  public subscribeToPresenceEvents(handler: (presence: any) => void) {
-    this.element$.pipe(filter((x) => x.getAttribute("to") === this.jid)).subscribe((presence) => {
-      handler(presence)
-    })
   }
 }

@@ -9,5 +9,9 @@ export function iqStanza(type: "set" | "get", attrs: IqStanzaAttrs, children: Xm
 
 type PresenceAttrs = { hash: "sha-1"; ver: string }
 export function presenceStanza({ hash, ver }: PresenceAttrs) {
-  return h("presence", { xmlns: Namespaces.CLIENT }, h("c", { xmlns: Namespaces.CAPS, hash, ver }))
+  return h("presence", { xmlns: Namespaces.CLIENT })
+}
+
+export function queryStanzaPart(attrs: { xmlns: string; [s: string]: string }, children?: XmlNode) {
+  return h("query", attrs, children)
 }

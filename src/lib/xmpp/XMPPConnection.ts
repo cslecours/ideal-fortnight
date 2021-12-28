@@ -10,13 +10,14 @@ import { Namespaces } from "./namespaces"
 import { isElement } from "../xml/parseXml"
 import { randomUUID } from "../crypto/crypto.ponyfill"
 import { buildCapabilities, toVerHash } from "./disco/capabilities"
-import { BindError, DefinedConditions, ErrorType, StanzaError } from "./xmpp.errors"
+import { BindError, DefinedConditions, detectErrors, ErrorType, StanzaError } from "./xmpp.errors"
 import { authStanza, bindStanza, openStanza, sessionStanza } from "./auth/XmlAuthMessages"
 import { xmlStream } from "./xmlStream"
 import { AuthData } from "./auth/auth.models"
 import { doAuth } from "./auth/auth"
 import { getXMLParser, getXmlSerializer } from "../xml/shims"
 import { XMPPPluginAPI } from "./XMPP.api"
+import { StreamContext } from "./StreamContext"
 
 export enum XMPPConnectionState {
   None,
@@ -33,7 +34,7 @@ export class XMPPConnection implements XMPPPluginAPI {
 
   private jid?: string
 
-  private streamContext
+  private streamContext: StreamContext = new StreamContext()
 
   private status: XMPPConnectionState = XMPPConnectionState.None
 
@@ -105,17 +106,6 @@ export class XMPPConnection implements XMPPPluginAPI {
     })
   }
 
-  // TODO Move this around
-  private detectErrors(element: Element) {
-    const errorElement = Array.from(element.getElementsByTagName("error"))?.[0]
-    if (errorElement) {
-      const errorCondition = Array.from(errorElement.childNodes).find(
-        (x): x is Element => isElement(x) && x.getAttribute("xmlns") === Namespaces.STANZAS && x.tagName != "text"
-      )?.tagName as DefinedConditions
-      throw new StanzaError(errorElement.getAttribute("type") as ErrorType, errorCondition)
-    }
-  }
-
   private async doBind(auth: AuthData) {
     if (!hasFeature(this.features ?? [], "bind", Namespaces.BIND)) {
       throw new Error("BIND EXPECTED")
@@ -129,7 +119,7 @@ export class XMPPConnection implements XMPPPluginAPI {
       }
     }
 
-    this.detectErrors(element)
+    detectErrors(element)
 
     const jid = element.getElementsByTagName("jid").item(0)?.textContent
 

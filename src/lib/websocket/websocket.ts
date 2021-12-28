@@ -42,7 +42,6 @@ export class Websocket {
   }
 
   onMessage(ev: MessageEvent<string>): void {
-    
     console.log(this.colorConsole("\u001b[31m", "⬇ Recv".padEnd(20)), ev.data, "\n")
     this._messageSubject.next(ev.data)
   }

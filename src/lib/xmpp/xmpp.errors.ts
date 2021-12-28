@@ -1,3 +1,6 @@
+import { isElement } from "../xml/parseXml"
+import { Namespaces } from "./namespaces"
+
 /**
  * https://xmpp.org/rfcs/rfc3920.html#stanzas-error
  * <"bad-request"/> -- the sender has sent XML that is malformed or that cannot be processed (e.g., an IQ stanza that includes an unrecognized value of the 'type' attribute); the associated error type SHOULD be "modify".
@@ -72,5 +75,15 @@ export class BindError extends Error {
 
   constructor(public bindError: "conflict") {
     super(`BindError: ${bindError}`)
+  }
+}
+
+export function detectErrors(element: Element) {
+  const errorElement = Array.from(element.getElementsByTagName("error"))?.[0]
+  if (errorElement) {
+    const errorCondition = Array.from(errorElement.childNodes).find(
+      (x): x is Element => isElement(x) && x.getAttribute("xmlns") === Namespaces.STANZAS && x.tagName != "text"
+    )?.tagName as DefinedConditions
+    throw new StanzaError(errorElement.getAttribute("type") as ErrorType, errorCondition)
   }
 }

@@ -5,9 +5,14 @@ import { sha1 } from "../../crypto/crypto.ponyfill"
 export interface Capabilities {
   identities: { category: string; type: string; name?: string; lang?: string }[]
   features: string[]
+  formTypes: string[]
 }
 
-export function buildCapabilities(identities: Capabilities["identities"], features: Capabilities["features"], formTypes: string[] = []) {
+export function buildCapabilities(
+  identities: Capabilities["identities"],
+  features: Capabilities["features"],
+  formTypes: Capabilities["formTypes"] = []
+) {
   return {
     identities: identities.slice().sort((a, b) => {
       return (

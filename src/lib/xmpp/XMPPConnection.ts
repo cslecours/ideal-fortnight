@@ -1,7 +1,7 @@
 import { ConnectionStatus } from "../websocket/websocket.models"
 import { Websocket } from "../websocket/websocket"
 import { render } from "../xml/render"
-import { iqStanza, presenceStanza } from "./stanza"
+import { iqStanza, IqStanzaAttrs, presenceStanza } from "./stanza"
 import { filter, first, map, tap, timeout } from "rxjs/operators"
 import { firstValueFrom, identity, Observable, Subscription } from "rxjs"
 import { featureDetection, hasFeature, isStreamFeatures } from "./stream/featureDetection"
@@ -99,9 +99,9 @@ export class XMPPConnection implements XMPPPluginAPI {
     )
   }
 
-  public async sendIq(type: "set" | "get", stanza: XmlElement) {
+  public async sendIq(type: "set" | "get", attrs: Omit<IqStanzaAttrs, "id">, stanza: XmlElement) {
     const uniqueId = `${stanza.tagName}_${randomUUID()}`
-    return await this.sendAsync(iqStanza(type, { id: uniqueId }, stanza), (result) => {
+    return await this.sendAsync(iqStanza(type, { ...attrs, id: uniqueId, ...(this.jid ? { from: this.jid } : {}) }, stanza), (result) => {
       return result.tagName === "iq" && result.getAttribute("id") === uniqueId ? result : null
     })
   }
@@ -111,7 +111,7 @@ export class XMPPConnection implements XMPPPluginAPI {
       throw new Error("BIND EXPECTED")
     }
 
-    const element = await this.sendIq("set", bindStanza(auth.resource))
+    const element = await this.sendIq("set", {}, bindStanza(auth.resource))
     if (element.getAttribute("type") === "error") {
       const conflict = element.getElementsByTagName("conflict")
       if (conflict.length > 0) {
@@ -121,7 +121,7 @@ export class XMPPConnection implements XMPPPluginAPI {
 
     detectErrors(element)
 
-    const jid = element.getElementsByTagName("jid").item(0)?.textContent
+    const jid = element.getElementsByTagName("jid").item(0)?.textContent ?? undefined
 
     return jid
   }
@@ -130,7 +130,7 @@ export class XMPPConnection implements XMPPPluginAPI {
     if (!hasFeature(this.features, "session", Namespaces.SESSION)) {
       throw new Error("SESSION EXPECTED")
     }
-    const sessionResult = await this.sendIq("set", sessionStanza())
+    const sessionResult = await this.sendIq("set", {}, sessionStanza())
     return sessionResult
   }
 
@@ -155,6 +155,6 @@ export class XMPPConnection implements XMPPPluginAPI {
 
     this.status = XMPPConnectionState.Connected
 
-    this.websocket.send(render(presenceStanza({ hash: "sha-1", ver: await toVerHash(this.caps) })))
+    this.websocket.send(render(presenceStanza({ hash: "sha-1", ver: await toVerHash(this.caps), node: "cslecours-client" })))
   }
 }

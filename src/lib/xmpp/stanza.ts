@@ -2,7 +2,7 @@ import { createElement as h } from "../xml/createElement"
 import { XmlNode } from "../xml/xmlElement"
 import { Namespaces } from "./namespaces"
 
-type IqStanzaAttrs = { id: string } & ({ to: string } | { from: string } | Record<string, string | never>)
+export type IqStanzaAttrs = { id: string } & ({ to: string } | { from: string } | Record<string, string | never>)
 export function iqStanza(type: "set" | "get", attrs: IqStanzaAttrs, children: XmlNode) {
   return h("iq", { type, xmlns: Namespaces.CLIENT, ...attrs }, children)
 }

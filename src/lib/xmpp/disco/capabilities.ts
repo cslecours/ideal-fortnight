@@ -7,7 +7,7 @@ export interface Capabilities {
   features: string[]
 }
 
-export function buildCapabilities(identities: Capabilities["identities"], features: Capabilities["features"]) {
+export function buildCapabilities(identities: Capabilities["identities"], features: Capabilities["features"], formTypes: string[] = []) {
   return {
     identities: identities.slice().sort((a, b) => {
       return (
@@ -18,11 +18,13 @@ export function buildCapabilities(identities: Capabilities["identities"], featur
       )
     }),
     features: features.slice().sort(),
+    formTypes: formTypes.slice().sort(),
   }
 }
 
 export function toVerHash(d: ReturnType<typeof buildCapabilities>) {
   const identitiesHash = d.identities.map(({ category, type, lang, name }) => [category, type, lang, name].join("/") + "<")
   const featuresHash = d.features.map((x) => x + "<").join("")
-  return sha1(identitiesHash + featuresHash)
+  const formTypesHash = d.formTypes.map((x) => x + "<").join("")
+  return sha1(identitiesHash + featuresHash + formTypesHash)
 }

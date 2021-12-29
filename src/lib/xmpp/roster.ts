@@ -14,7 +14,7 @@ export interface RosterItem {
 export class Roster {
   constructor(private xmpp: XMPPPluginAPI) {}
   async getRoster(): Promise<RosterItem[]> {
-    const rosterResult = await this.xmpp.sendIq("get", queryStanzaPart({ xmlns: Namespaces.ROSTER }))
+    const rosterResult = await this.xmpp.sendIq("get", {}, queryStanzaPart({ xmlns: Namespaces.ROSTER }))
     const rosterResultObj = Array.from(rosterResult.getElementsByTagName("query").item(0)?.childNodes ?? [])
       .filter(isElement)
       .map((x) => {
@@ -27,6 +27,6 @@ export class Roster {
   }
 
   async addToRoster(jid: string, name: string): Promise<any> {
-    return await this.xmpp.sendIq("set", queryStanzaPart({ xmlns: Namespaces.ROSTER }, createElement("item", { jid, name })))
+    return await this.xmpp.sendIq("set", {}, queryStanzaPart({ xmlns: Namespaces.ROSTER }, createElement("item", { jid, name })))
   }
 }

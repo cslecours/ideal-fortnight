@@ -1,7 +1,7 @@
 import { XMPPPluginAPI } from "../XMPP.api"
-import { Capabilities } from "./capabilities"
-import { capabilitiesCache } from "./capabilitiesCache"
-import { discoInfoQueryStanza } from "./discoQuery"
+import { Capabilities } from "./caps/capabilities"
+import { capabilitiesCache } from "./caps/capabilitiesCache"
+import { discoInfoQueryStanza } from "./discoElements"
 import { fromDiscoResult } from "./discoResult"
 
 export class DiscoPlugin {

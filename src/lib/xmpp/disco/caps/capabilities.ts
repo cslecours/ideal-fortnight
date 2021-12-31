@@ -1,6 +1,6 @@
 // XEP-0115 https://xmpp.org/extensions/xep-0115.html
 
-import { sha1 } from "../../crypto/crypto.ponyfill"
+import { sha1 } from "../../../crypto/crypto.ponyfill"
 
 export interface Capabilities {
   identities: { category: string; type: string; name?: string; lang?: string }[]

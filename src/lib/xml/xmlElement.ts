@@ -1,4 +1,4 @@
-export type XmlAttributes = { [key: string]: string }
+export type XmlAttributes = { [key: string]: string | undefined }
 
 export interface XmlElement {
   tagName: string

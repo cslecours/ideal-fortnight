@@ -1,6 +1,6 @@
-import { XmlNode, XmlElement } from "./xmlElement"
+import { XmlNode, XmlElement, XmlAttributes } from "./xmlElement"
 
-export function createElement<T extends Record<keyof T, string>>(tagName: string, attrs?: T, children?: XmlNode): XmlElement {
+export function createElement<T extends XmlAttributes>(tagName: string, attrs?: T, children?: XmlNode): XmlElement {
   return {
     tagName,
     attrs,

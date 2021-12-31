@@ -1,4 +1,4 @@
-import { buildCapabilities } from "./capabilities"
+import { buildCapabilities } from "./caps/capabilities"
 
 export const fromDiscoResult = (element: Element) => {
   const identities = Array.from(element.getElementsByTagName("identity")).map((identity) => {
@@ -11,6 +11,7 @@ export const fromDiscoResult = (element: Element) => {
 
   const features = Array.from(element.getElementsByTagName("feature")).map((x) => x.getAttribute("var") ?? "")
 
+  // Probably not conform to spec.
   const formTypes = Array.from(element.getElementsByTagName("value")).map((value) => value.textContent ?? "")
 
   return buildCapabilities(identities, features, formTypes)

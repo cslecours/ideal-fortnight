@@ -14,7 +14,9 @@ export function createDocumentElement(stanza: XmlNode, doc = getDummyXMLDomDocum
   const element = doc.createElement(tagName)
   if (attrs) {
     Object.entries(attrs).forEach(([attr, value]) => {
-      element.setAttribute(attr, value.toString())
+      if (value != undefined) {
+        element.setAttribute(attr, value.toString())
+      }
     })
   }
 

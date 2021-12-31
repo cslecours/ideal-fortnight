@@ -9,7 +9,7 @@ import { XmlNode, XmlElement } from "../xml/xmlElement"
 import { Namespaces } from "./namespaces"
 import { isElement } from "../xml/parseXml"
 import { randomUUID } from "../crypto/crypto.ponyfill"
-import { buildCapabilities, toVerHash } from "./disco/capabilities"
+import { buildCapabilities } from "./disco/caps/capabilities"
 import { BindError, detectErrors } from "./xmpp.errors"
 import { bindStanza, openStanza, sessionStanza } from "./auth/XmlAuthMessages"
 import { xmlStream } from "./xmlStream"
@@ -17,7 +17,6 @@ import { AuthData } from "./auth/auth.models"
 import { doAuth } from "./auth/auth"
 import { getXmlSerializer } from "../xml/shims"
 import { XMPPPluginAPI } from "./XMPP.api"
-import { StreamContext } from "./StreamContext"
 
 export enum XMPPConnectionState {
   None,
@@ -34,13 +33,9 @@ export class XMPPConnection implements XMPPPluginAPI {
 
   private jid?: string
 
-  private streamContext: StreamContext = new StreamContext()
-
   private status: XMPPConnectionState = XMPPConnectionState.None
 
   private features?: ReturnType<typeof featureDetection>
-
-  private caps = buildCapabilities([], [Namespaces.CAPS])
 
   private element$: Observable<Element>
 
@@ -79,29 +74,39 @@ export class XMPPConnection implements XMPPPluginAPI {
 
   private subscription = new Subscription()
 
-  public async on({ tagName, xmlns }: { tagName: string; xmlns?: string }, callback: (e: Element) => Element | void | undefined) {
-    this.subscription.add(
-      this.element$
-        .pipe(
-          filter((el) => {
-            const tagMatch = !tagName || el.tagName === tagName
-            const xmlnsMatch = !xmlns || el.getAttribute("xmlns") === xmlns
-            return tagMatch && xmlnsMatch
-          }),
-          tap((x) => {
-            const result = callback(x)
-            if (result) {
-              this.websocket.send(getXmlSerializer().serializeToString(result))
-            }
-          })
-        )
-        .subscribe()
-    )
+  public on({ tagName, xmlns }: { tagName: string; xmlns?: string }, callback: (e: Element) => void | Element): () => void {
+    const subscription = this.element$
+      .pipe(
+        filter((el) => {
+          const tagMatch = !tagName || el.tagName === tagName
+          const xmlnsMatch = !xmlns || el.getAttribute("xmlns") === xmlns
+          return tagMatch && xmlnsMatch
+        }),
+        tap((x) => {
+          const result = callback(x)
+          if (result) {
+            this.websocket.send(getXmlSerializer().serializeToString(result))
+          }
+        })
+      )
+      .subscribe()
+
+    this.subscription.add(subscription)
+    return () => subscription.unsubscribe()
+  }
+
+  public onSelfPresence(callback: (e: any) => void) {
+    this.on({ tagName: "presence", xmlns: Namespaces.CLIENT }, (e) => {
+      const from = e.getAttribute("from")
+      if (from === this.jid) {
+        callback(e)
+      }
+    })
   }
 
   public async sendIq(type: "set" | "get", attrs: Omit<IqStanzaAttrs, "id">, stanza: XmlElement) {
     const uniqueId = `${stanza.tagName}_${randomUUID()}`
-    return await this.sendAsync(iqStanza(type, { ...attrs, id: uniqueId, ...(this.jid ? { from: this.jid } : {}) }, stanza), (result) => {
+    return await this.sendAsync(iqStanza(type, { ...attrs, id: uniqueId, from: this.jid }, stanza), (result) => {
       return result.tagName === "iq" && result.getAttribute("id") === uniqueId ? result : null
     })
   }
@@ -126,14 +131,6 @@ export class XMPPConnection implements XMPPPluginAPI {
     return jid
   }
 
-  private async doSession() {
-    if (!hasFeature(this.features, "session", Namespaces.SESSION)) {
-      throw new Error("SESSION EXPECTED")
-    }
-    const sessionResult = await this.sendIq("set", {}, sessionStanza())
-    return sessionResult
-  }
-
   private async requestFeatures(auth: AuthData) {
     this.features = await this.sendAsync(openStanza(auth.domain), (el) => (isStreamFeatures(el) ? featureDetection(el) : null))
   }
@@ -150,11 +147,13 @@ export class XMPPConnection implements XMPPPluginAPI {
     const mechanisms = hasFeature(this.features, "mechanisms", Namespaces.SASL) ?? []
     await doAuth(this, mechanisms, auth)
     await this.requestFeatures(auth)
-    const [jid] = await Promise.all([this.doBind(auth), this.doSession()])
+    const [jid] = await Promise.all([this.doBind(auth)])
     if (jid) this.jid = jid
 
     this.status = XMPPConnectionState.Connected
+  }
 
-    this.websocket.send(render(presenceStanza({ hash: "sha-1", ver: await toVerHash(this.caps), node: "cslecours-client" })))
+  sendPresence() {
+    this.websocket.send(render(presenceStanza()))
   }
 }

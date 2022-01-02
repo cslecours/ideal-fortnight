@@ -1,5 +1,5 @@
 export enum ConnectionStatus {
-  Failed,
-  Open,
-  Closed,
+  Failed = "failed",
+  Open = "open",
+  Closed = "closed",
 }

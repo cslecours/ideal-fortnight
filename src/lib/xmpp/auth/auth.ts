@@ -24,9 +24,10 @@ export async function doAuth(xmpp: XMPPPluginAPI, mechanisms: string[], auth: Au
 }
 
 export function handleAuthResult(element: Element): true | null {
-  if (!element || !isElement(element) || element.getAttribute(Namespaces.SASL) === null) {
+  if (!element || !isElement(element) || element.getAttribute("xmlns") !== Namespaces.SASL) {
     return null
   }
+
   if (element.tagName === "failure") {
     throw new SASLError()
   }

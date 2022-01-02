@@ -3,29 +3,30 @@ import { Websocket } from "../websocket/websocket"
 import { render } from "../xml/render"
 import { iqStanza, IqStanzaAttrs, presenceStanza } from "./stanza"
 import { filter, first, map, tap, timeout } from "rxjs/operators"
-import { firstValueFrom, identity, Observable, Subscription } from "rxjs"
+import { BehaviorSubject, firstValueFrom, identity, Observable, Subject, Subscription } from "rxjs"
 import { featureDetection, hasFeature, isStreamFeatures } from "./stream/featureDetection"
 import { XmlNode, XmlElement } from "../xml/xmlElement"
 import { Namespaces } from "./namespaces"
 import { isElement } from "../xml/parseXml"
 import { randomUUID } from "../crypto/crypto.ponyfill"
-import { buildCapabilities } from "./disco/caps/capabilities"
 import { BindError, detectErrors } from "./xmpp.errors"
-import { bindStanza, openStanza, sessionStanza } from "./auth/XmlAuthMessages"
+import { bindStanza, openStanza } from "./auth/XmlAuthMessages"
 import { xmlStream } from "./xmlStream"
 import { AuthData } from "./auth/auth.models"
 import { doAuth } from "./auth/auth"
 import { getXmlSerializer } from "../xml/shims"
 import { XMPPPluginAPI } from "./XMPP.api"
+import { createElement } from "../xml/createElement"
+import { getBareJidFromJid } from "./jid"
 
 export enum XMPPConnectionState {
-  None,
-  Connecting,
-  ConnectionFailed,
-  Authenticating,
-  Connected,
-  Disconnecting,
-  Disconnected,
+  None = "none",
+  Connecting = "connecting",
+  ConnectionFailed = "failed",
+  Authenticating = "authenticating",
+  Connected = "connected",
+  Disconnecting = "disconnecting",
+  Disconnected = "disconnected",
 }
 
 export class XMPPConnection implements XMPPPluginAPI {
@@ -33,15 +34,25 @@ export class XMPPConnection implements XMPPPluginAPI {
 
   private jid?: string
 
-  private status: XMPPConnectionState = XMPPConnectionState.None
+  public context: { domain?: string } = {}
+
+  private status$: BehaviorSubject<string> = new BehaviorSubject(XMPPConnectionState.None.toString())
 
   private features?: ReturnType<typeof featureDetection>
 
   private element$: Observable<Element>
 
-  constructor(_options: { connectionTimeout: number }) {
+  constructor() {
     this.websocket = new Websocket()
     this.element$ = xmlStream(this.websocket.message$)
+    this.websocket.connectionStatus$.subscribe((s) => {
+      if (s === ConnectionStatus.Closed) {
+        this.status$.next(XMPPConnectionState.Disconnected)
+      }
+      if (s === ConnectionStatus.Failed) {
+        this.status$.next(XMPPConnectionState.Disconnected)
+      }
+    })
 
     this.on({ tagName: "iq", xmlns: Namespaces.CLIENT }, (e) => {
       if (e.getAttribute("type") !== "get") {
@@ -63,7 +74,7 @@ export class XMPPConnection implements XMPPPluginAPI {
     const resultPromise = firstValueFrom(
       this.element$.pipe(
         map(mapper),
-        filter(<T>(x: T | null): x is NonNullable<T> => !!x),
+        filter(<T>(x: T | null): x is NonNullable<T> => x != null && x != undefined),
         msTimeout ? timeout(msTimeout) : identity
       )
     )
@@ -104,6 +115,10 @@ export class XMPPConnection implements XMPPPluginAPI {
     })
   }
 
+  public onConnectionStatusChange(callback: (s: string) => void) {
+    this.status$.subscribe(callback)
+  }
+
   public async sendIq(type: "set" | "get", attrs: Omit<IqStanzaAttrs, "id">, stanza: XmlElement) {
     const uniqueId = `${stanza.tagName}_${randomUUID()}`
     return await this.sendAsync(iqStanza(type, { ...attrs, id: uniqueId, from: this.jid }, stanza), (result) => {
@@ -136,12 +151,13 @@ export class XMPPConnection implements XMPPPluginAPI {
   }
 
   async connect({ url, auth }: { url: string | URL; auth: AuthData }): Promise<void> {
-    this.status = XMPPConnectionState.Connecting
+    this.status$.next(XMPPConnectionState.Connecting)
 
+    this.context = { domain: auth.domain }
     this.websocket.connect(url, ["xmpp"])
     await firstValueFrom(this.websocket.connectionStatus$.pipe(first((x) => x === ConnectionStatus.Open)))
 
-    this.status = XMPPConnectionState.Authenticating
+    this.status$.next(XMPPConnectionState.Authenticating)
 
     await this.requestFeatures(auth)
     const mechanisms = hasFeature(this.features, "mechanisms", Namespaces.SASL) ?? []
@@ -150,10 +166,22 @@ export class XMPPConnection implements XMPPPluginAPI {
     const [jid] = await Promise.all([this.doBind(auth)])
     if (jid) this.jid = jid
 
-    this.status = XMPPConnectionState.Connected
+    this.status$.next(XMPPConnectionState.Connected)
+  }
+
+  async disconnect() {
+    this.status$.next(XMPPConnectionState.Disconnecting)
+    this.websocket.close()
+  }
+
+  sendMessage(options: { to: string; type: string }, message: { body: string }) {
+    this.websocket.send(render(messageStanza({ from: getBareJidFromJid(this.jid ?? ""), type: options.type, to: options.to }, message)))
   }
 
   sendPresence() {
     this.websocket.send(render(presenceStanza()))
   }
+}
+function messageStanza(options: { from?: string; to: string; type: string }, message: { body: string }): XmlNode {
+  return createElement("message", options, createElement("body", undefined, message.body))
 }

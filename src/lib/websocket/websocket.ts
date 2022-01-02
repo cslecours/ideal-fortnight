@@ -1,4 +1,4 @@
-import { Subject } from "rxjs"
+import { BehaviorSubject, Subject } from "rxjs"
 import { ConnectionStatus } from "./websocket.models"
 import { getWebSocketConstructor } from "./websocket.ponyfill"
 
@@ -9,7 +9,7 @@ export class Websocket {
 
   private _messageSubject = new Subject<string>()
   private _errorSubject = new Subject<unknown>()
-  private _connectionStatusSubject = new Subject<ConnectionStatus>()
+  private _connectionStatusSubject = new BehaviorSubject<ConnectionStatus>(ConnectionStatus.Closed)
 
   public get connectionStatus$() {
     return this._connectionStatusSubject.asObservable()
@@ -29,7 +29,7 @@ export class Websocket {
   }
 
   close() {
-    this.socket?.close()
+    this.socket?.close(1000)
   }
 
   private colorConsole(code: string, text: string) {

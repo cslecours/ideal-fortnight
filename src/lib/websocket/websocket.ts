@@ -8,11 +8,16 @@ export class Websocket {
   private socket: WebSocket | undefined
 
   private _messageSubject = new Subject<string>()
+  private _outgoingMessagesSubject = new Subject<string | ArrayBuffer | Blob | ArrayBufferView>()
   private _errorSubject = new Subject<unknown>()
   private _connectionStatusSubject = new BehaviorSubject<ConnectionStatus>(ConnectionStatus.Closed)
 
   public get connectionStatus$() {
     return this._connectionStatusSubject.asObservable()
+  }
+
+  public get outgoingMessages$() {
+    return this._outgoingMessagesSubject.asObservable()
   }
 
   public get message$() {
@@ -39,6 +44,7 @@ export class Websocket {
   send(data: string | ArrayBuffer | Blob | ArrayBufferView) {
     console.log(this.colorConsole("\u001b[32m", "⬆ Send".padEnd(20)), data, "\n")
     this.socket?.send(data)
+    this._outgoingMessagesSubject.next(data)
   }
 
   onMessage(ev: MessageEvent<string>): void {

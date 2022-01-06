@@ -34,13 +34,13 @@ export class XMPPConnection implements XMPPPluginAPI {
 
   private jid?: string
 
-  public context: { domain?: string } = {}
+  public context: { domain?: string; features?: ReturnType<typeof featureDetection> } = {}
 
-  private status$: BehaviorSubject<string> = new BehaviorSubject(XMPPConnectionState.None.toString())
-
-  private features?: ReturnType<typeof featureDetection>
+  private status$: BehaviorSubject<XMPPConnectionState> = new BehaviorSubject(XMPPConnectionState.None as XMPPConnectionState)
 
   private element$: Observable<Element>
+  private subscription = new Subscription()
+  private outgoingMessage$ = new Subject<XmlElement>()
 
   constructor() {
     this.websocket = new Websocket()
@@ -70,7 +70,7 @@ export class XMPPConnection implements XMPPPluginAPI {
     })
   }
 
-  public async sendAsync<T>(stanza: XmlNode, mapper: (str: Element) => T | null, msTimeout?: number | undefined) {
+  public async sendAsync<T>(stanza: XmlElement, mapper: (str: Element) => T | null, msTimeout?: number | undefined) {
     const resultPromise = firstValueFrom(
       this.element$.pipe(
         map(mapper),
@@ -79,24 +79,29 @@ export class XMPPConnection implements XMPPPluginAPI {
       )
     )
 
-    this.websocket.send(render(stanza))
+    this.internalSend(stanza)
     return await resultPromise
   }
 
-  private subscription = new Subscription()
+  public on(
+    criteria: { tagName: string; xmlns?: string } | { tagName: string; xmlns?: string }[],
+    callback: (e: Element) => void | XmlElement
+  ): () => void {
+    const criteriaArray = Array.isArray(criteria) ? criteria : [criteria]
 
-  public on({ tagName, xmlns }: { tagName: string; xmlns?: string }, callback: (e: Element) => void | Element): () => void {
     const subscription = this.element$
       .pipe(
         filter((el) => {
-          const tagMatch = !tagName || el.tagName === tagName
-          const xmlnsMatch = !xmlns || el.getAttribute("xmlns") === xmlns
-          return tagMatch && xmlnsMatch
+          return criteriaArray.some(({ tagName, xmlns }) => {
+            const tagMatch = !tagName || el.tagName === tagName
+            const xmlnsMatch = !xmlns || el.getAttribute("xmlns") === xmlns
+            return tagMatch && xmlnsMatch
+          })
         }),
         tap((x) => {
           const result = callback(x)
           if (result) {
-            this.websocket.send(getXmlSerializer().serializeToString(result))
+            this.internalSend(result)
           }
         })
       )
@@ -115,8 +120,17 @@ export class XMPPConnection implements XMPPPluginAPI {
     })
   }
 
-  public onConnectionStatusChange(callback: (s: string) => void) {
-    this.status$.subscribe(callback)
+  public onOutgoingMessage(callback: (element: XmlElement) => void) {
+    const subscription = this.outgoingMessage$.subscribe((node) => callback(node))
+    this.subscription.add(subscription)
+    return () => subscription.unsubscribe()
+  }
+
+  public onConnectionStatusChange(callback: (s: XMPPConnectionState) => void) {
+    const subscription = this.status$.subscribe(callback)
+
+    this.subscription.add(subscription)
+    return () => subscription.unsubscribe()
   }
 
   public async sendIq(type: "set" | "get", attrs: Omit<IqStanzaAttrs, "id">, stanza: XmlElement) {
@@ -127,7 +141,7 @@ export class XMPPConnection implements XMPPPluginAPI {
   }
 
   private async doBind(auth: AuthData) {
-    if (!hasFeature(this.features ?? [], "bind", Namespaces.BIND)) {
+    if (!hasFeature(this.context.features ?? [], "bind", Namespaces.BIND)) {
       throw new Error("BIND EXPECTED")
     }
 
@@ -147,7 +161,7 @@ export class XMPPConnection implements XMPPPluginAPI {
   }
 
   private async requestFeatures(auth: AuthData) {
-    this.features = await this.sendAsync(openStanza(auth.domain), (el) => (isStreamFeatures(el) ? featureDetection(el) : null))
+    this.context.features = await this.sendAsync(openStanza(auth.domain), (el) => (isStreamFeatures(el) ? featureDetection(el) : null))
   }
 
   async connect({ url, auth }: { url: string | URL; auth: AuthData }): Promise<void> {
@@ -160,7 +174,7 @@ export class XMPPConnection implements XMPPPluginAPI {
     this.status$.next(XMPPConnectionState.Authenticating)
 
     await this.requestFeatures(auth)
-    const mechanisms = hasFeature(this.features, "mechanisms", Namespaces.SASL) ?? []
+    const mechanisms = hasFeature(this.context.features, "mechanisms", Namespaces.SASL) ?? []
     await doAuth(this, mechanisms, auth)
     await this.requestFeatures(auth)
     const [jid] = await Promise.all([this.doBind(auth)])
@@ -174,14 +188,19 @@ export class XMPPConnection implements XMPPPluginAPI {
     this.websocket.close()
   }
 
+  private internalSend(element: XmlElement) {
+    this.websocket.send(render(element))
+    this.outgoingMessage$.next(element)
+  }
+
   sendMessage(options: { to: string; type: string }, message: { body: string }) {
-    this.websocket.send(render(messageStanza({ from: getBareJidFromJid(this.jid ?? ""), type: options.type, to: options.to }, message)))
+    this.internalSend(messageStanza({ from: getBareJidFromJid(this.jid ?? ""), type: options.type, to: options.to }, message))
   }
 
   sendPresence() {
-    this.websocket.send(render(presenceStanza()))
+    this.internalSend(presenceStanza())
   }
 }
-function messageStanza(options: { from?: string; to: string; type: string }, message: { body: string }): XmlNode {
+function messageStanza(options: { from?: string; to: string; type: string }, message: { body: string }): XmlElement {
   return createElement("message", options, createElement("body", undefined, message.body))
 }

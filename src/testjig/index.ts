@@ -1,7 +1,12 @@
 /* eslint-disable prefer-const */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { randomUUID } from "../lib/crypto/crypto.ponyfill"
+import { createElement } from "../lib/xml/createElement"
 import { getBareJidFromJid, getDomain, getNodeFromJid, getResourceFromJid } from "../lib/xmpp/jid"
+import { Namespaces } from "../lib/xmpp/namespaces"
+import { withCarbons } from "../lib/xmpp/plugins/Carbon"
+import { withStreamManagement } from "../lib/xmpp/plugins/StreamManagement"
+import { VCardTempPlugin } from "../lib/xmpp/plugins/VCardPlugin"
 import { XMPPConnection } from "../lib/xmpp/XMPPConnection"
 import authForm from "./authForm"
 import connectionStatusIndicator from "./connectionStatusIndicator"
@@ -9,7 +14,9 @@ import { discoServerSectionComponent } from "./disco"
 import { rosterComponent } from "./roster"
 
 const container = document.getElementById("app")!
-let connection = new XMPPConnection()
+let connection = withCarbons(withStreamManagement(new XMPPConnection()))
+
+const vCardPlugin = new VCardTempPlugin(connection)
 
 let authData = {
   url: localStorage.getItem("xmpp-server-url") ?? "",
@@ -61,6 +68,14 @@ function addAction(actionName: string, action: () => void) {
 addAction("send presence", () => connection.sendPresence())
 addAction("connect", () => connect())
 addAction("disconnect", () => connection.disconnect())
+addAction("retrieve your vCard", () => vCardPlugin.retrieveInfo().then(console.log))
+addAction("get subscriptions", () => {
+  connection.sendIq(
+    "get",
+    { to: "conference." + connection.context.domain },
+    createElement("pubsub", { xmlns: Namespaces.PUBSUB }, createElement("subscriptions"))
+  )
+})
 container.append(actionsElement)
 
 const rosterElement = document.createElement("div")

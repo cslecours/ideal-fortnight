@@ -23,7 +23,7 @@ describe("lib", () => {
   it("supports streams stanzas", () => {
     const element = createElement("stream:error", undefined, [
       createElement("defined-condition", { xmlns: "urn:ietf:params:xml:xmpp-streams" }),
-      createElement("text", { xmlns: "urn:ietf:params:xml:ns:xmpp-streams", "xml:lang": "langcode" }, "OPTIONAL descriptive text"),
+      createElement("text", { "xmlns": "urn:ietf:params:xml:ns:xmpp-streams", "xml:lang": "langcode" }, "OPTIONAL descriptive text"),
       "[OPTIONAL application-specific condition element]",
     ])
     const result = render(element)

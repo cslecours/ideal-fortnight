@@ -30,21 +30,20 @@ export const withStreamManagement = (connection: XMPPConnection) => {
       const canEnable = connection.context.features?.some((x) => x.xmlns === namespace && x.name == "sm")
       if (!canEnable) return
 
-      const result = await connection.sendAsync(enableStreamManagement("true"), (e) => {
+      smContext = await connection.sendAsync(enableStreamManagement("true"), (e) => {
         if (e.getAttribute("xmlns") !== namespace) {
           return null
         }
         if (e.tagName === "enabled") {
           smContext = { enabled: true, id: e.getAttribute("id") ?? undefined, max: parseInt(e.getAttribute("max") ?? "") }
-
+          counts.incoming = 0
+          counts.outgoing = 0
           return smContext
         }
         if (e.tagName === "error") {
           detectErrors(e)
         }
       })
-
-      console.log("sm:result", result)
     }
   })
   return connection

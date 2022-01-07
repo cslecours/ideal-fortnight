@@ -58,7 +58,7 @@ export class StanzaError extends Error {
   name = "StanzaError"
 
   constructor(public errorType: ErrorType, public definedCondition: DefinedConditions) {
-    super(`StanzaError: ${errorType}`)
+    super(`${errorType} caused by ${definedCondition}`)
   }
 }
 

@@ -1,5 +1,4 @@
 import { createElement } from "../../xml/createElement"
-import { fromElement } from "../../xml/fromElement"
 import { isElement } from "../../xml/parseXml"
 import { XMPPPluginAPI } from "../XMPP.api"
 

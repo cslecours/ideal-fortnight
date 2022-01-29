@@ -10,7 +10,7 @@
     "start": "ts-node ./src/index.ts",
     "test": "jest",
     "lint": "eslint --ext .js,.ts,.tsx,.jsx .",
-    "prettier": "prettier --write .js,.ts,.tsx,.jsx"
+    "prettier": "prettier --write ./src"
   },
   "author": "",
   "license": "ISC",

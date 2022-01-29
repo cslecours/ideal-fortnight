@@ -1,5 +1,4 @@
 import { createElement } from "../../xml/createElement"
-import { XMPPPluginAPI } from "../XMPP.api"
 import { XMPPConnection, XMPPConnectionState } from "../XMPPConnection"
 
 export function withCarbons(connection: XMPPConnection): XMPPConnection {

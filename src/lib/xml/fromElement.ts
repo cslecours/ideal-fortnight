@@ -1,10 +1,10 @@
 import { isElement, isTextNode } from "./parseXml"
 
-export function fromElement<T>(element: Element, includeTagName: boolean = true): T & BasicReturnType {
+export function fromElement<T>(element: Element, includeTagName = true): T & BasicReturnType {
   return fromElementToObject(element, includeTagName) as T & BasicReturnType
 }
 
-interface BasicReturnType extends Record<Exclude<"items" | "children", string>, string | boolean | null> {
+export interface BasicReturnType extends Record<Exclude<"items" | "children", string>, string | boolean | null> {
   tagName?: string
   items?: (BasicReturnType | string | boolean)[]
   children?: (BasicReturnType | string | boolean)[]

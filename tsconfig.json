@@ -6,8 +6,11 @@
     "moduleResolution": "Node",
     "outDir": "./dist",
     "esModuleInterop": false,
+    "declaration": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true
-  }
+  },
+  "include": ["src/lib"],
+  "exclude": ["**/*.test.ts"]
 }

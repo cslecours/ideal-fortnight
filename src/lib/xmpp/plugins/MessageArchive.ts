@@ -1,8 +1,9 @@
 import { randomUUID } from "../../crypto/crypto.ponyfill"
 import { createElement } from "../../xml/createElement"
 import { isElement } from "../../xml/parseXml"
+import { XmlElement } from "../../xml/xmlElement"
 import { Namespaces } from "../namespaces"
-import { iqStanza } from "../stanza"
+import { iqStanza, queryStanzaPart } from "../stanza"
 import { detectErrors } from "../xmpp.errors"
 import { XMPPConnection } from "../XMPPConnection"
 
@@ -11,7 +12,10 @@ const xmlns = "urn:xmpp:mam:2"
 export class MessageArchiveManagementPlugin {
   constructor(private xmpp: XMPPConnection) {}
 
-  query(options: { jid: string; queryid?: string; before?: string; after?: string; max?: number }): Promise<{
+  query(
+    options: { jid: string; queryid?: string; before?: string; after?: string; max?: number },
+    queryChildren: XmlElement[] = []
+  ): Promise<{
     results: Element[]
     set: { count?: number }
     hasNextPage: boolean
@@ -24,15 +28,14 @@ export class MessageArchiveManagementPlugin {
       iqStanza(
         "set",
         { to: options.jid, id: id },
-        createElement(
-          "query",
-          { xmlns: xmlns, queryid: options.queryid },
+        queryStanzaPart({ xmlns: xmlns, queryid: options.queryid }, [
+          ...queryChildren,
           createElement("set", { xmlns: Namespaces.RSM }, [
             createElement("max", {}, `${options.max ?? " "}`),
             ...(!options.after || options.before ? [createElement("before", {}, `${options.before ?? ""}`)] : []),
             ...(options.after ? [createElement("after", {}, `${options.after}`)] : []),
-          ])
-        )
+          ]),
+        ])
       ),
       (e) => {
         if (e.tagName === "message" && isElement(e.firstChild) && e.firstChild.getAttribute("queryid") === options.queryid) {

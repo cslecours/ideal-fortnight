@@ -193,14 +193,11 @@ export class XMPPConnection implements XMPPPluginAPI {
     this.outgoingMessage$.next(element)
   }
 
-  sendMessage(options: { to: string; type: string }, message: { body: string }) {
-    this.internalSend(messageStanza({ from: getBareJidFromJid(this.jid ?? ""), type: options.type, to: options.to }, message))
+  sendMessage(attrs: { to: string; type: string }, children?: XmlElement): void {
+    this.internalSend(createElement("message", attrs, children))
   }
 
-  sendPresence() {
-    this.internalSend(presenceStanza())
+  sendPresence(attrs?: { to?: string; type?: string }, children?: XmlElement) {
+    this.internalSend(presenceStanza(attrs, children))
   }
-}
-function messageStanza(options: { from?: string; to: string; type: string }, message: { body: string }): XmlElement {
-  return createElement("message", options, createElement("body", undefined, message.body))
 }

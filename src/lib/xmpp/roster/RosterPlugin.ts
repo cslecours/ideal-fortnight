@@ -1,3 +1,4 @@
+import { createElement } from "../../xml/createElement"
 import { fromElement } from "../../xml/fromElement"
 import { isElement } from "../../xml/parseXml"
 import { detectErrors } from "../xmpp.errors"
@@ -51,6 +52,14 @@ export class Roster {
   async sendRosterSet(jid: string, name?: string, subscription?: "remove"): Promise<void> {
     const rosterSetResult = await this.xmpp.sendIq("set", {}, rosterSet(jid, name, subscription))
     detectErrors(rosterSetResult)
+  }
+
+  authorizeSubscription(jid: string, message?: string) {
+    this.xmpp.sendPresence({ to: jid, type: "subscribed" }, (message && createElement("status", {}, message)) || undefined)
+  }
+
+  unauthorizeSubscription(jid: string, message?: string) {
+    this.xmpp.sendPresence({ to: jid, type: "unsubscribed" }, (message && createElement("status", {}, message)) || undefined)
   }
 
   onRosterPush(callback: (item: RosterItem, roster: RosterItem[]) => void) {

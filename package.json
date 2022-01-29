@@ -4,10 +4,8 @@
   "description": "",
   "main": "dist/libindex.js",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
-    "start": "ts-node ./src/index.ts",
+    "build": "tsc",
+    "start": "vite",
     "test": "jest",
     "lint": "eslint --ext .js,.ts,.tsx,.jsx .",
     "prettier": "prettier --write ./src"

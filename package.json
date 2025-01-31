@@ -16,7 +16,7 @@
     "@types/jest": "^27.0.3",
     "@typescript-eslint/eslint-plugin": "^5.7.0",
     "@typescript-eslint/parser": "^5.7.0",
-    "@xmldom/xmldom": "^0.7.6",
+    "@xmldom/xmldom": "^0.8.10",
     "eslint": "^7.32.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-config-standard": "^16.0.3",
@@ -34,7 +34,7 @@
     "vite": "^2.9.18"
   },
   "optionalDependencies": {
-    "@xmldom/xmldom": "^0.7.6"
+    "@xmldom/xmldom": "^0.8.10"
   },
   "dependencies": {
     "rxjs": "^7.4.0"

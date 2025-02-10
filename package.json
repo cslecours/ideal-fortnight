@@ -1,6 +1,7 @@
 {
   "name": "ideal-fortnight",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
   "main": "dist/libindex.js",
   "scripts": {

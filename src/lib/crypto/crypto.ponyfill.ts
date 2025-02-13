@@ -1,17 +1,8 @@
 let myCrypto: typeof crypto
 if (typeof crypto === "undefined") {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  myCrypto = require("crypto").webcrypto
+  myCrypto = require("node:crypto").webcrypto
 } else {
   myCrypto = crypto
-}
-
-// crypto.randomUUID is not popular enough, so we roll out our own
-export const randomUUID = function uuidv4() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c: any) =>
-    (c ^ (myCrypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)
-  )
 }
 
 function str2ab(str: string) {

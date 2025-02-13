@@ -8,7 +8,6 @@ import { featureDetection, hasFeature, isStreamFeatures } from "./stream/feature
 import { XmlNode, XmlElement } from "../xml/xmlElement"
 import { Namespaces } from "./namespaces"
 import { isElement } from "../xml/parseXml"
-import { randomUUID } from "../crypto/crypto.ponyfill"
 import { BindError, detectErrors } from "./xmpp.errors"
 import { bindStanza, openStanza } from "./auth/XmlAuthMessages"
 import { xmlStream } from "./xmlStream"
@@ -134,7 +133,7 @@ export class XMPPConnection implements XMPPPluginAPI {
   }
 
   public async sendIq(type: "set" | "get", attrs: Omit<IqStanzaAttrs, "id">, stanza: XmlElement) {
-    const uniqueId = `${stanza.tagName}_${randomUUID()}`
+    const uniqueId = `${stanza.tagName}_${crypto.randomUUID()}`
     return await this.sendAsync(iqStanza(type, { ...attrs, id: uniqueId, from: this.jid }, stanza), (result) => {
       return result.tagName === "iq" && result.getAttribute("id") === uniqueId ? result : null
     })

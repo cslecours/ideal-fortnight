@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-var-requires: "off" */
 export const getDummyXMLDomDocument = () => {
   if (typeof globalThis.DOMImplementation !== "undefined") {
     return document.implementation.createDocument(null, null) as Document

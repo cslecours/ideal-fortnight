@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { DiscoPlugin } from "../lib/xmpp/disco/discoPlugin"
 import { XMPPConnection, XMPPConnectionState } from "../lib/xmpp/XMPPConnection"
 

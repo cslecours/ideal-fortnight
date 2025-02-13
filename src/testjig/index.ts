@@ -1,6 +1,3 @@
-/* eslint-disable prefer-const */
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { randomUUID } from "../lib/crypto/crypto.ponyfill"
 import { createElement } from "../lib/xml/createElement"
 import { getBareJidFromJid, getDomain, getNodeFromJid, getResourceFromJid } from "../lib/xmpp/jid"
 import { Namespaces } from "../lib/xmpp/namespaces"
@@ -14,7 +11,7 @@ import { discoServerSectionComponent } from "./disco"
 import { rosterComponent } from "./roster"
 
 const container = document.getElementById("app")!
-let connection = withCarbons(withStreamManagement(new XMPPConnection()))
+const connection = withCarbons(withStreamManagement(new XMPPConnection()))
 
 const vCardPlugin = new VCardTempPlugin(connection)
 
@@ -31,7 +28,7 @@ function connect() {
       authcid: getNodeFromJid(authData.user)!,
       authzid: getBareJidFromJid(authData.user)!,
       domain: getDomain(authData.user)!,
-      resource: getResourceFromJid(authData.user) + randomUUID().slice(30),
+      resource: getResourceFromJid(authData.user) + crypto.randomUUID().slice(30),
       pass: authData.password.trim(),
     },
   })

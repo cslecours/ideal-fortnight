@@ -1,4 +1,3 @@
-import { randomUUID } from "../../crypto/crypto.ponyfill"
 import { createElement } from "../../xml/createElement"
 import { isElement } from "../../xml/parseXml"
 import { XmlElement } from "../../xml/xmlElement"
@@ -23,7 +22,7 @@ export class MessageArchiveManagementPlugin {
     previousPageParams: () => boolean | Parameters<MessageArchiveManagementPlugin["query"]>[0]
   }> {
     const result: Element[] = []
-    const id = randomUUID()
+    const id = crypto.randomUUID()
     const xmppRequest = this.xmpp.sendAsync(
       iqStanza(
         "set",
@@ -72,10 +71,10 @@ export class MessageArchiveManagementPlugin {
             results: result,
             hasNextPage: !fin.complete,
             nextPageParams: () => {
-              return !fin.complete && { jid: options.jid, queryid: randomUUID(), max: options.max, after: currentSet.last }
+              return !fin.complete && { jid: options.jid, queryid: crypto.randomUUID(), max: options.max, after: currentSet.last }
             },
             previousPageParams: () => {
-              return { jid: options.jid, queryid: randomUUID(), max: options.max, before: currentSet.first }
+              return { jid: options.jid, queryid: crypto.randomUUID(), max: options.max, before: currentSet.first }
             },
             fin: fin,
             set: set,

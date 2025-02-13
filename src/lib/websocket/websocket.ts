@@ -1,8 +1,5 @@
 import { BehaviorSubject, Subject } from "rxjs"
 import { ConnectionStatus } from "./websocket.models"
-import { getWebSocketConstructor } from "./websocket.ponyfill"
-
-const WebSocket = getWebSocketConstructor()
 
 export class Websocket {
   private socket: WebSocket | undefined

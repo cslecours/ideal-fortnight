@@ -34,12 +34,13 @@ function connect() {
   })
 }
 
-if (authData.url && authData.user && authData.password) {
+try {
   connect()
-} else {
+} catch (e) {
   const authElement = document.createElement("div")
   container.append(authElement)
   authForm(authElement, authData, (data) => {
+    console.log("SUBMIT", data)
     authData = { url: data.url ?? "", user: data.user ?? "", password: data.password ?? "" }
     localStorage.setItem("xmpp-server-url", data.url ?? "")
     localStorage.setItem("xmpp-user", data.user ?? "")

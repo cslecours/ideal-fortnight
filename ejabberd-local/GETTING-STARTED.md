@@ -8,6 +8,16 @@
 ## Initial Setup : 
 Do this to setup your ejabberd instance
 
+Add the following into your `etc/hosts` file
+
+```
+127.0.0.1       ideal-fortnight.example
+127.0.0.1       conference.ideal-fortnight.example
+127.0.0.1       proxy.ideal-fortnight.example
+127.0.0.1       pubsub.ideal-fortnight.example
+127.0.0.1       upload.ideal-fortnight.example
+```
+
 - Run `./make-certs.sh` to create your `.certs` folder
 - Pull the docker image by running 
 ```

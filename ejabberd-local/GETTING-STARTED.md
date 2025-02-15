@@ -8,7 +8,7 @@
 ## Initial Setup : 
 Do this to setup your ejabberd instance
 
-- Run `./make-certs.sh` to create your `.certs folder
+- Run `./make-certs.sh` to create your `.certs` folder
 - Pull the docker image by running 
 ```
 docker pull ghcr.io/processone/ejabberd

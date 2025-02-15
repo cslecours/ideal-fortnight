@@ -4,13 +4,16 @@ Thank you for considering contributing to Ideal Fortnight! We appreciate your su
 
 ## How to Contribute
 
-### If you have a request / issue
+### If you have a request or issue
 
-Use the issues tab in github
+Use the Issues tab on GitHub to report any requests or issues.
 
 ### If you have a feature or bugfix
 
-Fork the repository and make a pull request.
+1. Fork the repository.
+2. Create a new branch for your feature or bugfix.
+3. Make your changes.
+4. Submit a pull request.
 
 ## Getting Help
 

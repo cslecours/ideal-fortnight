@@ -1,4 +1,5 @@
 import { AuthForm } from "./components/AuthForm"
+import "./components/ConnectionScreen"
 
 export default function (
   element: Element,
@@ -6,6 +7,7 @@ export default function (
   onSubmit: (data: Record<"url" | "user" | "password", string | undefined>) => void
 ) {
   customElements.define("auth-form", AuthForm)
+
   const authFormElement = document.createElement("auth-form") as AuthForm
   authFormElement.data = data
 

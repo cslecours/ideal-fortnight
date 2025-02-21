@@ -6,7 +6,7 @@ export const discoServerSectionComponent = (connection: XMPPConnection, element:
     if (c !== XMPPConnectionState.Connected) {
       return
     }
-    element.innerHTML = ""
+    element.innerHTML = "DISCO"
     const disco = new DiscoPlugin(connection)
 
     const discoInfoElement = document.createElement("pre")

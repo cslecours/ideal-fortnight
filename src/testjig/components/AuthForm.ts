@@ -7,10 +7,10 @@ export class AuthForm extends HTMLElement {
     const styleSheet = new CSSStyleSheet()
     styleSheet.replaceSync(`
       :host {
-        font-family: consolas;
       }
-      label { display:block; font-family: inherit; }
-      input { margin:3px; font-size:120%; }
+      label { display:block; font-family: inherit; width: 100%; }
+      input { margin:3px; flex:1; width: 100%; }
+      form { width : 300px; }
     `)
     this.shadowRoot?.adoptedStyleSheets.push(styleSheet)
 
@@ -25,7 +25,7 @@ export class AuthForm extends HTMLElement {
     if (!this.shadowRoot) {
       return
     }
-    this.shadowRoot.innerHTML = `<form>
+    this.shadowRoot.innerHTML = `<form method="${this.getAttribute("method")}">
         <label>XMPP : <input name="url" type="text" value="${this.data.url ?? ""}" /></label>
         <label>User : <input name="user" type="text" value="${this.data.user ?? ""}" /></label>
         <label>Pass : <input name="password" id="authForm-password" value="${this.data.password ?? ""}" /></label>
@@ -47,3 +47,4 @@ export class AuthForm extends HTMLElement {
     })
   }
 }
+customElements.define("auth-form", AuthForm)

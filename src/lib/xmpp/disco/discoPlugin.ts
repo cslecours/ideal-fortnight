@@ -29,8 +29,8 @@ export class DiscoPlugin {
     return capabilities
   }
 
-  async sendDiscoItemQuery(to: string): Promise<{ jid: string; node: string; name: string }[]> {
-    const result = await this.xmpp.sendIq("get", { to: to }, discoItemsQueryStanza())
+  async sendDiscoItemQuery(to: string, node?: string): Promise<{ jid: string; node: string; name: string }[]> {
+    const result = await this.xmpp.sendIq("get", { to: to }, discoItemsQueryStanza(node))
     return Array.from(result.getElementsByTagName("item")).map((t) => fromElement<{ jid: string; node: string; name: string }>(t, false))
   }
 }

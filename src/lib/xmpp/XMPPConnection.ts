@@ -31,7 +31,7 @@ export enum XMPPConnectionState {
 export class XMPPConnection implements XMPPPluginAPI {
   private websocket: Websocket
 
-  private jid?: string
+  public jid?: string
 
   public context: { domain?: string; features?: ReturnType<typeof featureDetection> } = {}
 
@@ -192,8 +192,8 @@ export class XMPPConnection implements XMPPPluginAPI {
     this.outgoingMessage$.next(element)
   }
 
-  sendMessage(attrs: { to: string; type: string }, children?: XmlElement): void {
-    this.internalSend(createElement("message", attrs, children))
+  sendMessage(attrs: { to: string; type: string }, children?: XmlNode): void {
+    this.internalSend(createElement("message", { from: this.jid, ...attrs }, children))
   }
 
   sendPresence(attrs?: { to?: string; type?: string }, children?: XmlElement) {

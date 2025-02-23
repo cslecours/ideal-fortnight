@@ -24,6 +24,16 @@ export const rosterComponent = (connection: XMPPConnection, element: Element) =>
   })
   rosterEventContainer.append(getRosterBtn)
 
+  const addToRoster = document.createElement("button")
+  addToRoster.textContent = "Add to Roster"
+  addToRoster.addEventListener("click", () => {
+    const jid = prompt("Enter JID to add to roster")
+    if (jid) {
+      roster.sendRosterSet(jid, jid)
+    }
+  })
+  rosterEventContainer.append(addToRoster)
+
   const lastRosterUpdate = document.createElement("span")
   rosterEventContainer.append(lastRosterUpdate)
 

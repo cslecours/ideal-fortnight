@@ -149,7 +149,7 @@ export class AppComponent extends LitElement {
   render() {
     return html`
             <app-layout>
-            <div slot="header">
+            <div slot="header" style="display:flex; gap: 1rem; padding: 1rem;">
             ${this.status === "connected" ? html`<button @click="${() => this.connection.disconnect()}">Disconnect</button>` : nothing}
             ${this.status === "connecting" ? html`<button disabled>Connecting</button>` : nothing}
             ${this.status === "disconnecting" ? html`<button disabled>Disconnecting</button>` : nothing}
@@ -164,6 +164,10 @@ export class AppComponent extends LitElement {
                 this.shadowRoot?.querySelector<HTMLDialogElement>("#settingsDialog")?.close()
               }}" .data="${this.authData}"></auth-form>
             </dialog>
+            <div style="flex: 1;"></div>
+            <div style="">
+              ${this.authData?.user}
+            </div>
             </div>
             <div slot="list">
               ${this.status === "connected" ? this.renderRoster() : html``}
@@ -219,7 +223,7 @@ export class AppComponent extends LitElement {
     `
   }
   private renderRoster() {
-    return html`
+    return html`<div style="display: flex; flex-direction: column; padding: 0 0.5rem">
       <button @click=${(e) => {
         const jid = prompt("JID to Add To Roster")
         if (!jid) return
@@ -227,10 +231,11 @@ export class AppComponent extends LitElement {
         if (!name) return
         this.rosterPlugin.sendRosterSet(jid, name)
       }}>Add to Roster</button>
+      </div>
       <ul style="padding:0;list-style: none;">${this.roster.map(
         (item) =>
-          html`<li @click=${() => this.updateJid(item.jid)} style="padding: 1rem 0.5rem; ${this.jid === item.jid ? "background: #555" : ""}">
-              ${item.jid}
+          html`<li @click=${() => this.updateJid(item.jid)} style="cursor: pointer; padding: 1rem 0.5rem; ${this.jid === item.jid ? "background: #555" : ""}">
+              ${getNodeFromJid(item.jid)}
           </li>`
       )}</ul>`
   }

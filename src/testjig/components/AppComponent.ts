@@ -12,6 +12,7 @@ import { XmlElement } from "../../lib/xml/xmlElement"
 import { Roster, RosterItem } from "../../lib/xmpp/roster/RosterPlugin"
 import { createElement } from "../../lib/xml/createElement"
 import { DiscoPlugin } from "../../lib/xmpp/disco/discoPlugin"
+import { MessageArchiveManagementPlugin } from "../../lib/xmpp/plugins/MessageArchive"
 
 @customElement("app-component")
 export class AppComponent extends LitElement {
@@ -23,6 +24,7 @@ export class AppComponent extends LitElement {
   @state() status = ""
   @state() jid = ""
   @state() roster: RosterItem[] = []
+  @state() messages: Element[] = []
 
   rosterPlugin = new Roster(this.connection)
   discoPlugin = new DiscoPlugin(this.connection)
@@ -118,7 +120,14 @@ export class AppComponent extends LitElement {
       <header>${this.jid}</header>
       <hr style="width:100%">
       <div style="overflow-y: auto; height: 100%;">
-        
+        ${repeat(
+          this.messages,
+          (message) => message.getAttribute("id"),
+          (message) => {
+            const forwardedMessage = message.querySelector("forwarded message")
+            return html`<li>${new Date(message.querySelector("delay")?.getAttribute("stamp")).toLocaleTimeString()} : ${forwardedMessage?.getAttribute("from")} <br/> ${forwardedMessage?.querySelector("body")}</li>`
+          }
+        )}
       </div>
       <hr style="width:100%">
       <div>
@@ -128,11 +137,27 @@ export class AppComponent extends LitElement {
     `
   }
   private renderRoster() {
-    return html`<ul style="padding:0;">${repeat(
-      this.roster,
-      (item) => item.jid,
-      (item) => html`<li @click=${() => (this.jid = item.jid)}>${item.jid}</li>`
-    )}</ul>`
+    return html`
+      <button @click=${(e) => {
+        const jid = prompt("JID to Add To Roster")
+        if (!jid) return
+        const name = prompt("Name")
+        if (!name) return
+        this.rosterPlugin.sendRosterSet(jid, name)
+      }}>Add to Roster</button>
+      <ul style="padding:0;">${repeat(
+        this.roster,
+        (item) => item.jid,
+        (item) => html`<li @click=${() => this.updateJid(item.jid)}>${item.jid}</li>`
+      )}</ul>`
+  }
+
+  updateJid(jid: string) {
+    this.jid = jid
+    new MessageArchiveManagementPlugin(this.connection).query({ jid: jid, max: 10 }, [createElement("after")]).then((result) => {
+      this.messages = result.results
+      console.log(result)
+    })
   }
 }
 

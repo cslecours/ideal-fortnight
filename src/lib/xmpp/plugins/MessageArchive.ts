@@ -37,7 +37,8 @@ export class MessageArchiveManagementPlugin {
         ])
       ),
       (e) => {
-        if (e.tagName === "message" && isElement(e.firstChild) && e.firstChild.getAttribute("queryid") === options.queryid) {
+        e.tagName === "message" && console.log(e.firstChild)
+        if (e.tagName === "message") {
           result.push(e)
         }
         if (e.tagName === "iq" && e.getAttribute("from") === options.jid && e.getAttribute("id") === id) {

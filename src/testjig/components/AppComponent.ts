@@ -150,10 +150,6 @@ export class AppComponent extends LitElement {
     return html`
             <app-layout>
             <div slot="header" style="display:flex; gap: 1rem; padding: 1rem;">
-            ${this.status === "connected" ? html`<button @click="${() => this.connection.disconnect()}">Disconnect</button>` : nothing}
-            ${this.status === "connecting" ? html`<button disabled>Connecting</button>` : nothing}
-            ${this.status === "disconnecting" ? html`<button disabled>Disconnecting</button>` : nothing}
-            ${this.status === "disconnected" ? html`<button @click="${this.attemptConnection}">Connect</button>` : nothing}
             <button @click="${() => (this.shadowRoot?.getElementById("settingsDialog") as HTMLDialogElement).showModal()}">Settings</button>
             <dialog id="settingsDialog">
               <auth-form method="dialog" @submit="${(e) => {
@@ -165,8 +161,20 @@ export class AppComponent extends LitElement {
               }}" .data="${this.authData}"></auth-form>
             </dialog>
             <div style="flex: 1;"></div>
-            <div style="">
-              ${this.authData?.user}
+            <div>
+              <button popovertarget="user-menu">
+                ${this.authData?.user} 
+                ${this.status === "connected" ? "🟢" : ""}
+                ${this.status === "connecting" ? "🟡" : ""}
+                ${this.status === "disconnected" ? "⚪️" : ""}
+                ${this.status === "disconnecting" ? "🟠" : ""}
+              </button>
+              <div popover id="user-menu">
+                ${this.status === "connected" ? html`<button @click="${() => this.connection.disconnect()}">Disconnect</button>` : nothing}
+                ${this.status === "connecting" ? html`<button disabled>Connecting</button>` : nothing}
+                ${this.status === "disconnecting" ? html`<button disabled>Disconnecting</button>` : nothing}
+                ${this.status === "disconnected" ? html`<button @click="${this.attemptConnection}">Connect</button>` : nothing}
+              </div>
             </div>
             </div>
             <div slot="list">
@@ -211,15 +219,21 @@ export class AppComponent extends LitElement {
         })}
       </div>
       <hr style="width:100%">
-      <div>
-        <input type="text" id="text" name="text" />
-        <button @click=${(e: MouseEvent) => {
-          this.connection.sendMessage(
-            { to: this.jid, type: "chat" },
-            createElement("body", {}, this.shadowRoot?.querySelector<HTMLInputElement>("#text")?.value) ?? "ERROR_INPUT"
-          )
-        }}>Send</button>
+      <form @submit="${(e) => {
+        e.preventDefault()
+        this.connection.sendMessage(
+          { to: this.jid, type: "chat" },
+          createElement("body", {}, this.shadowRoot?.querySelector<HTMLInputElement>("#text")?.value) ?? "ERROR_INPUT"
+        )
+        e.target.reset()
+      }}"
+        >
+        <div style="display:flex;">
+        <input type="text" style="flex: 1;" id="text" name="text" />
+        <button type="submit"
+        >Send</button>
       </div>
+      </form>
     `
   }
   private renderRoster() {

@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing } from "lit"
+import { LitElement, html, css, nothing, PropertyValues } from "lit"
 import { customElement, property, state } from "lit/decorators.js"
 import { repeat } from "lit/directives/repeat.js"
 import { withCarbons } from "../../lib/xmpp/plugins/Carbon"
@@ -8,11 +8,12 @@ import "./AppLayout"
 import { getBareJidFromJid, getDomain, getNodeFromJid, getResourceFromJid } from "../../lib/xmpp/jid"
 
 import "./AuthForm"
-import { XmlElement } from "../../lib/xml/xmlElement"
 import { Roster, RosterItem } from "../../lib/xmpp/roster/RosterPlugin"
 import { createElement } from "../../lib/xml/createElement"
 import { DiscoPlugin } from "../../lib/xmpp/disco/discoPlugin"
 import { MessageArchiveManagementPlugin } from "../../lib/xmpp/plugins/MessageArchive"
+import { render } from "../../lib/xml/render"
+import { parseXml } from "../../lib/xml/parseXml"
 
 @customElement("app-component")
 export class AppComponent extends LitElement {
@@ -37,6 +38,7 @@ export class AppComponent extends LitElement {
     nextPageParams: () => boolean | Parameters<MessageArchiveManagementPlugin["query"]>[0]
     previousPageParams: () => boolean | Parameters<MessageArchiveManagementPlugin["query"]>[0]
   }
+  listObserver: MutationObserver
 
   connectedCallback(): void {
     super.connectedCallback()
@@ -48,11 +50,43 @@ export class AppComponent extends LitElement {
     }
 
     // Outgoing message
+    this.connection.onOutgoingMessage({ tagName: "message" }, (el) => {
+      if (this.jid === el.attrs?.to) {
+        if (el.children && !Array.isArray(el.children)) {
+          el.children = [el.children]
+        }
+        if (Array.isArray(el.children)) {
+          el.children.push(createElement("delay", { stamp: new Date().toISOString() }))
+        }
+
+        const parsedElement = parseXml(render(el))
+        this.messages = [...this.messages, parsedElement]
+      }
+    })
+
+    // Outgoing message
     this.connection.on({ tagName: "message" }, (el) => {
-      if (el.getAttribute("from") === this.jid) {
-        console.log("MESSAGE", el)
+      const isRealMessage = !el.querySelector("forwarded")
+      if (!isRealMessage) {
+        return
+      }
+
+      el.appendChild(parseXml(render(createElement("delay", { stamp: new Date().toISOString() }))))
+      console.log("Message", el)
+      if (this.jid === getBareJidFromJid(el.getAttribute("from")!)) {
         this.messages = [...this.messages, el]
       }
+    })
+
+    this.connection.on({ tagName: "presence", xmlns: "jabber:client" }, (el) => {
+      const jid = el.getAttribute("from")
+      if (jid && this.roster.find((e) => e.jid === jid)) {
+        this.rosterPlugin.authorizeSubscription(jid)
+      }
+    })
+
+    this.rosterPlugin.onRosterPush((item, list) => {
+      this.roster = this.rosterPlugin.state
     })
 
     this.connection.onConnectionStatusChange((status) => {
@@ -61,6 +95,7 @@ export class AppComponent extends LitElement {
         this.rosterPlugin.getRoster().then((list) => {
           console.log("Roster", list)
           this.roster = list
+          this.jid = this.roster.find(Boolean)?.jid!
         })
         this.connection.sendPresence({ type: "available" })
 
@@ -72,22 +107,44 @@ export class AppComponent extends LitElement {
         discoItemQuery.then((x) => {
           console.log("Disco Items", x)
         })
-
-        this.connection.on({ tagName: "presence", xmlns: "jabber:client" }, (el) => {
-          const jid = el.getAttribute("from")
-          if (jid && this.roster.find((e) => e.jid === jid)) {
-            this.rosterPlugin.authorizeSubscription(jid)
-          }
-        })
-
-        this.rosterPlugin.onRosterPush((item, list) => {
-          this.roster = this.rosterPlugin.state
-        })
       }
+    })
+
+    this.attemptConnection()
+  }
+
+  protected firstUpdated(_changedProperties: PropertyValues): void {
+    super.firstUpdated(_changedProperties)
+    if (this.shadowRoot?.querySelector("#messages")) {
+      this.listObserver = new MutationObserver((mutations) => {
+        const element = this.shadowRoot?.querySelector("#messages")!
+        const isScrolledToBottom = true
+
+        if (isScrolledToBottom) {
+          element.lastElementChild?.scrollIntoView({ behavior: "smooth" })
+        }
+      })
+      this.listObserver.observe(this.shadowRoot.querySelector("#messages")!, { childList: true })
+    }
+  }
+
+  attemptConnection() {
+    this.connection.connect({
+      url: this.authData!.url,
+      auth: {
+        authcid: getNodeFromJid(this.authData!.user)!,
+        authzid: getBareJidFromJid(this.authData!.user)!,
+        domain: getDomain(this.authData!.user)!,
+        resource: getResourceFromJid(this.authData!.user) + crypto.randomUUID().slice(30),
+        pass: this.authData!.password.trim(),
+      },
     })
   }
 
-  disconnectedCallback(): void {}
+  disconnectedCallback(): void {
+    this.connection.unsubscribe()
+    this.listObserver.disconnect()
+  }
 
   render() {
     return html`
@@ -96,21 +153,7 @@ export class AppComponent extends LitElement {
             ${this.status === "connected" ? html`<button @click="${() => this.connection.disconnect()}">Disconnect</button>` : nothing}
             ${this.status === "connecting" ? html`<button disabled>Connecting</button>` : nothing}
             ${this.status === "disconnecting" ? html`<button disabled>Disconnecting</button>` : nothing}
-            ${
-              this.status === "disconnected"
-                ? html`<button @click="${() =>
-                    this.connection.connect({
-                      url: this.authData!.url,
-                      auth: {
-                        authcid: getNodeFromJid(this.authData!.user)!,
-                        authzid: getBareJidFromJid(this.authData!.user)!,
-                        domain: getDomain(this.authData!.user)!,
-                        resource: getResourceFromJid(this.authData!.user) + crypto.randomUUID().slice(30),
-                        pass: this.authData!.password.trim(),
-                      },
-                    })}">Connect</button>`
-                : nothing
-            }
+            ${this.status === "disconnected" ? html`<button @click="${this.attemptConnection}">Connect</button>` : nothing}
             <button @click="${() => (this.shadowRoot?.getElementById("settingsDialog") as HTMLDialogElement).showModal()}">Settings</button>
             <dialog id="settingsDialog">
               <auth-form method="dialog" @submit="${(e) => {
@@ -136,7 +179,7 @@ export class AppComponent extends LitElement {
     return html`
       <header>${this.jid}</header>
       <hr style="width:100%">
-      <div style="overflow-y: auto; height: 100%;">
+      <div id="messages" style="overflow-y: auto; height: 100%;">
         ${
           this.result &&
           this.result.hasNextPage &&
@@ -152,12 +195,13 @@ export class AppComponent extends LitElement {
           }}>Load more</button>`
         }
         ${this.messages.map((c) => {
+          const messageElement = c.querySelector("forwarded message") ?? c.querySelector("message") ?? c
           const message = {
-            id: c.querySelector("forwarded message")?.getAttribute("id") ?? "",
-            stamp: c.querySelector("delay")?.getAttribute("stamp") ?? undefined,
-            from: c.querySelector("forwarded message")?.getAttribute("from") ?? undefined,
-            to: c.querySelector("forwarded message")?.getAttribute("to") ?? undefined,
-            body: c.querySelector("forwarded message body")?.textContent ?? undefined,
+            id: messageElement?.getAttribute("id") ?? "",
+            stamp: c?.querySelector("delay")?.getAttribute("stamp") ?? undefined,
+            from: messageElement?.getAttribute("from") ?? undefined,
+            to: messageElement?.getAttribute("to") ?? undefined,
+            body: messageElement?.textContent ?? undefined,
           }
           return html`<li>${new Date(message.stamp!).toLocaleTimeString()} : ${message.from} <br/> ${message.body}</li>`
         })}
@@ -166,10 +210,6 @@ export class AppComponent extends LitElement {
       <div>
         <input type="text" id="text" name="text" />
         <button @click=${(e: MouseEvent) => {
-          const messageContent = `<forwarded><message from="${this.jid}" type="chat"><body>${this.shadowRoot?.querySelector<HTMLInputElement>("#text")?.value}</body><delay stamp="${new Date().toISOString()}" /></message>`
-          const message = document.createElement("message")
-          message.innerHTML = messageContent
-          this.messages = [...this.messages, message]
           this.connection.sendMessage(
             { to: this.jid, type: "chat" },
             createElement("body", {}, this.shadowRoot?.querySelector<HTMLInputElement>("#text")?.value) ?? "ERROR_INPUT"
@@ -187,10 +227,11 @@ export class AppComponent extends LitElement {
         if (!name) return
         this.rosterPlugin.sendRosterSet(jid, name)
       }}>Add to Roster</button>
-      <ul style="padding:0;">${repeat(
-        this.roster,
-        (item) => item.jid,
-        (item) => html`<li @click=${() => this.updateJid(item.jid)}>${item.jid}</li>`
+      <ul style="padding:0;list-style: none;">${this.roster.map(
+        (item) =>
+          html`<li @click=${() => this.updateJid(item.jid)} style="padding: 1rem 0.5rem; ${this.jid === item.jid ? "background: #555" : ""}">
+              ${item.jid}
+          </li>`
       )}</ul>`
   }
 
@@ -199,7 +240,6 @@ export class AppComponent extends LitElement {
     this.jid = jid
     this.mamPlugin.query({ jid: jid, max: 10, queryid: crypto.randomUUID() }).then((result) => {
       this.messages = result.results.map((c) => c)
-      console.warn(this.messages)
       this.result = result
     })
   }

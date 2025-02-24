@@ -119,8 +119,31 @@ export class XMPPConnection implements XMPPPluginAPI {
     })
   }
 
-  public onOutgoingMessage(callback: (element: XmlElement) => void) {
-    const subscription = this.outgoingMessage$.subscribe((node) => callback(node))
+  public onOutgoingMessage(
+    criteria: { tagName: string; xmlns?: string } | { tagName: string; xmlns?: string }[],
+    callback: (e: XmlElement) => void
+  ): () => void {
+    console
+    const criteriaArray = Array.isArray(criteria) ? criteria : [criteria]
+
+    const subscription = this.outgoingMessage$
+      .pipe(
+        filter((el) => {
+          return criteriaArray.some(({ tagName, xmlns }) => {
+            const tagMatch = !tagName || el.tagName === tagName
+            const xmlnsMatch = !xmlns || el.attrs?.xmlns === xmlns
+            return tagMatch && xmlnsMatch
+          })
+        })
+      )
+      .subscribe((x) => {
+        try {
+          callback(x)
+        } catch (e) {
+          console.error(e)
+        }
+      })
+
     this.subscription.add(subscription)
     return () => subscription.unsubscribe()
   }
@@ -185,6 +208,10 @@ export class XMPPConnection implements XMPPPluginAPI {
   async disconnect() {
     this.status$.next(XMPPConnectionState.Disconnecting)
     this.websocket.close()
+  }
+
+  async unsubscribe() {
+    this.subscription.unsubscribe()
   }
 
   private internalSend(element: XmlElement) {

@@ -8,14 +8,12 @@ export const withStreamManagement = (connection: XMPPConnection) => {
   let smContext: { enabled: boolean; max: number | undefined; id: string | undefined } = { enabled: false, max: undefined, id: undefined }
 
   const counts = { incoming: 0, outgoing: 0 }
-  connection.onOutgoingMessage((message) => {
+  connection.onOutgoingMessage([{ tagName: "iq" }, { tagName: "presence" }, { tagName: "query" }], () => {
     if (smContext.enabled) {
-      if (["iq", "presence", "query"].includes(message.tagName)) {
-        counts.outgoing++
-      }
+      counts.outgoing++
     }
   })
-  connection.on([{ tagName: "iq" }, { tagName: "presence" }, { tagName: "query" }], (e) => {
+  connection.on([{ tagName: "iq" }, { tagName: "presence" }, { tagName: "query" }], () => {
     if (smContext.enabled) {
       counts.incoming++
     }

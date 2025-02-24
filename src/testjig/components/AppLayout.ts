@@ -17,10 +17,10 @@ export class AppLayout extends LitElement {
     }
     .left {
         border-right: 1px solid #ccc;
-        padding: 1rem;
+        padding: 1rem 0 1rem 0;
     }
     .center {
-        padding: 1rem;
+        padding: 0.5rem;
         overflow-y: overlay;
     }
 `

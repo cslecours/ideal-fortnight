@@ -23,6 +23,7 @@ export class MessageArchiveManagementPlugin {
   }> {
     const result: Element[] = []
     const id = crypto.randomUUID()
+    const queryid = options.queryid ?? crypto.randomUUID()
     const xmppRequest = this.xmpp.sendAsync(
       iqStanza(
         "set",
@@ -37,8 +38,7 @@ export class MessageArchiveManagementPlugin {
         ])
       ),
       (e) => {
-        e.tagName === "message" && console.log(e.firstChild)
-        if (e.tagName === "message") {
+        if (e.tagName === "message" && e.querySelector("result")?.getAttribute("queryid") === queryid) {
           // UNSURE WHEN TO STOP
           result.push(e)
         }
@@ -66,6 +66,8 @@ export class MessageArchiveManagementPlugin {
             first: (result?.[0]?.firstChild as Element)?.id,
             last: (result?.[result.length - 1]?.firstChild as Element)?.id,
           }
+
+          // https://xmpp.org/extensions/xep-0297.html Stanza Forwarding
 
           console.log(currentSet)
 

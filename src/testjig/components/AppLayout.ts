@@ -21,20 +21,20 @@ export class AppLayout extends LitElement {
     }
     .center {
         padding: 1rem;
+        overflow-y: overlay;
     }
 `
 
   render() {
     return html`
-            <div class="top">
-            <slot name="header"></slot>
-            </div>
-            <div class="left">
-            <slot name="list"></slot>
-            </div>
-            <div class="center">
-            <slot name="subroute"></slot>
-            </div>
-        `
+      <div class="top">
+        <slot name="header"></slot>
+      </div>
+      <div class="left">
+        <slot name="list"></slot>
+      </div>
+      <div class="center">
+        <slot name="subroute"></slot>
+      </div>`
   }
 }

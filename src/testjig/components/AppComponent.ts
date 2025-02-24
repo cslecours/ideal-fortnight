@@ -24,10 +24,19 @@ export class AppComponent extends LitElement {
   @state() status = ""
   @state() jid = ""
   @state() roster: RosterItem[] = []
-  @state() messages: Element[] = []
+  @state() messages: any[] = []
 
   rosterPlugin = new Roster(this.connection)
   discoPlugin = new DiscoPlugin(this.connection)
+  mamPlugin = new MessageArchiveManagementPlugin(this.connection)
+
+  result?: {
+    results: Element[]
+    set: { count?: number }
+    hasNextPage: boolean
+    nextPageParams: () => boolean | Parameters<MessageArchiveManagementPlugin["query"]>[0]
+    previousPageParams: () => boolean | Parameters<MessageArchiveManagementPlugin["query"]>[0]
+  }
 
   connectedCallback(): void {
     super.connectedCallback()
@@ -37,6 +46,14 @@ export class AppComponent extends LitElement {
       user: localStorage.getItem("xmpp-user") ?? "",
       password: localStorage.getItem("xmpp-password") ?? "",
     }
+
+    // Outgoing message
+    this.connection.on({ tagName: "message" }, (el) => {
+      if (el.getAttribute("from") === this.jid) {
+        console.log("MESSAGE", el)
+        this.messages = [...this.messages, el]
+      }
+    })
 
     this.connection.onConnectionStatusChange((status) => {
       this.status = status.toString()
@@ -108,7 +125,7 @@ export class AppComponent extends LitElement {
             <div slot="list">
               ${this.status === "connected" ? this.renderRoster() : html``}
             </div>
-            <div slot="subroute" style="height:100%; display:flex; flex-direction: column;">
+            <div slot="subroute" style="height:100%; display:flex; flex-direction: column; overflow-y: overlay;">
               ${this.renderChatScreen()}
             </div>
             </app-layout>
@@ -120,19 +137,44 @@ export class AppComponent extends LitElement {
       <header>${this.jid}</header>
       <hr style="width:100%">
       <div style="overflow-y: auto; height: 100%;">
-        ${repeat(
-          this.messages,
-          (message) => message.getAttribute("id"),
-          (message) => {
-            const forwardedMessage = message.querySelector("forwarded message")
-            return html`<li>${new Date(message.querySelector("delay")?.getAttribute("stamp")).toLocaleTimeString()} : ${forwardedMessage?.getAttribute("from")} <br/> ${forwardedMessage?.querySelector("body")}</li>`
+        ${
+          this.result &&
+          this.result.hasNextPage &&
+          html`<button @click=${() => {
+            const previousPageParams = this.result?.previousPageParams() ?? false
+            if (typeof previousPageParams === "object") {
+              this.mamPlugin.query(previousPageParams).then((result) => {
+                this.messages = [...result.results.map((c) => c), ...this.messages]
+
+                this.result = result
+              })
+            }
+          }}>Load more</button>`
+        }
+        ${this.messages.map((c) => {
+          const message = {
+            id: c.querySelector("forwarded message")?.getAttribute("id") ?? "",
+            stamp: c.querySelector("delay")?.getAttribute("stamp") ?? undefined,
+            from: c.querySelector("forwarded message")?.getAttribute("from") ?? undefined,
+            to: c.querySelector("forwarded message")?.getAttribute("to") ?? undefined,
+            body: c.querySelector("forwarded message body")?.textContent ?? undefined,
           }
-        )}
+          return html`<li>${new Date(message.stamp!).toLocaleTimeString()} : ${message.from} <br/> ${message.body}</li>`
+        })}
       </div>
       <hr style="width:100%">
       <div>
         <input type="text" id="text" name="text" />
-        <button @click=${(e: MouseEvent) => this.connection.sendMessage({ to: this.jid, type: "chat" }, createElement("body", {}, this.shadowRoot?.querySelector<HTMLInputElement>("#text")?.value) ?? "ERROR_INPUT")}>Send</button>
+        <button @click=${(e: MouseEvent) => {
+          const messageContent = `<forwarded><message from="${this.jid}" type="chat"><body>${this.shadowRoot?.querySelector<HTMLInputElement>("#text")?.value}</body><delay stamp="${new Date().toISOString()}" /></message>`
+          const message = document.createElement("message")
+          message.innerHTML = messageContent
+          this.messages = [...this.messages, message]
+          this.connection.sendMessage(
+            { to: this.jid, type: "chat" },
+            createElement("body", {}, this.shadowRoot?.querySelector<HTMLInputElement>("#text")?.value) ?? "ERROR_INPUT"
+          )
+        }}>Send</button>
       </div>
     `
   }
@@ -153,10 +195,12 @@ export class AppComponent extends LitElement {
   }
 
   updateJid(jid: string) {
+    this.result = undefined
     this.jid = jid
-    new MessageArchiveManagementPlugin(this.connection).query({ jid: jid, max: 10 }, [createElement("after")]).then((result) => {
-      this.messages = result.results
-      console.log(result)
+    this.mamPlugin.query({ jid: jid, max: 10, queryid: crypto.randomUUID() }).then((result) => {
+      this.messages = result.results.map((c) => c)
+      console.warn(this.messages)
+      this.result = result
     })
   }
 }

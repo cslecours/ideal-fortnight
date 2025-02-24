@@ -39,6 +39,7 @@ export class MessageArchiveManagementPlugin {
       (e) => {
         e.tagName === "message" && console.log(e.firstChild)
         if (e.tagName === "message") {
+          // UNSURE WHEN TO STOP
           result.push(e)
         }
         if (e.tagName === "iq" && e.getAttribute("from") === options.jid && e.getAttribute("id") === id) {

@@ -40,6 +40,9 @@ export class Websocket {
 
   send(data: string | ArrayBuffer | Blob | ArrayBufferView) {
     console.log(this.colorConsole("\u001b[32m", "⬆ Send".padEnd(20)), data, "\n")
+    if (this.socket?.readyState !== WebSocket.OPEN) {
+      throw new Error("Socket is not open")
+    }
     this.socket?.send(data)
     this._outgoingMessagesSubject.next(data)
   }

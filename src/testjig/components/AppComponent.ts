@@ -17,7 +17,33 @@ import { parseXml } from "../../lib/xml/parseXml"
 
 @customElement("app-component")
 export class AppComponent extends LitElement {
-  static styles = css``
+  static styles = css`
+
+  #user-menu button {
+    text-align:left;
+  }
+
+  #user-menu:popover-open {
+    display:flex;
+    flex-direction: column;
+    justify-items: stretch;
+    justify-content: stretch;
+    gap: 4px;
+    min-width: 200px;
+    height: auto;
+    position: absolute;
+    inset: unset;
+    top: 40px;
+    right: 1rem;
+    border: none;
+    background: #444;
+  }
+  hr {
+    width:100%;
+    border-style: solid;
+    border-color: #777;
+  }
+  `
 
   connection = withCarbons(withStreamManagement(new XMPPConnection()))
   authData?: { url: string; user: string; password: string }
@@ -26,6 +52,7 @@ export class AppComponent extends LitElement {
   @state() jid = ""
   @state() roster: RosterItem[] = []
   @state() messages: any[] = []
+  @state() presence = ""
 
   rosterPlugin = new Roster(this.connection)
   discoPlugin = new DiscoPlugin(this.connection)
@@ -91,12 +118,16 @@ export class AppComponent extends LitElement {
 
     this.connection.onConnectionStatusChange((status) => {
       this.status = status.toString()
+      if (status !== "connected") {
+        this.presence = ""
+      }
       if (status === "connected") {
         this.rosterPlugin.getRoster().then((list) => {
           console.log("Roster", list)
           this.roster = list
           this.jid = this.roster.find(Boolean)?.jid!
         })
+        this.presence = "chat"
         this.connection.sendPresence({ type: "available" })
 
         const discoInfoQuery = this.discoPlugin.sendDiscoInfoQuery(this.connection.context.domain!)
@@ -113,14 +144,15 @@ export class AppComponent extends LitElement {
     this.attemptConnection()
   }
 
+  @state() isScrolledToBottom = true
+
   protected firstUpdated(_changedProperties: PropertyValues): void {
     super.firstUpdated(_changedProperties)
     if (this.shadowRoot?.querySelector("#messages")) {
       this.listObserver = new MutationObserver((mutations) => {
         const element = this.shadowRoot?.querySelector("#messages")!
-        const isScrolledToBottom = true
 
-        if (isScrolledToBottom) {
+        if (this.isScrolledToBottom) {
           element.lastElementChild?.scrollIntoView({ behavior: "smooth" })
         }
       })
@@ -163,17 +195,24 @@ export class AppComponent extends LitElement {
             <div style="flex: 1;"></div>
             <div>
               <button popovertarget="user-menu">
+                ${this.presence === "chat" ? "🟢" : ""}
+                ${this.presence === "dnd" ? "⛔️" : ""}
+                ${this.presence === "away" ? "🟡" : ""}
+                ${this.presence === "xa" ? "🟠" : ""}
                 ${this.authData?.user} 
-                ${this.status === "connected" ? "🟢" : ""}
-                ${this.status === "connecting" ? "🟡" : ""}
                 ${this.status === "disconnected" ? "⚪️" : ""}
-                ${this.status === "disconnecting" ? "🟠" : ""}
               </button>
               <div popover id="user-menu">
-                ${this.status === "connected" ? html`<button @click="${() => this.connection.disconnect()}">Disconnect</button>` : nothing}
-                ${this.status === "connecting" ? html`<button disabled>Connecting</button>` : nothing}
-                ${this.status === "disconnecting" ? html`<button disabled>Disconnecting</button>` : nothing}
-                ${this.status === "disconnected" ? html`<button @click="${this.attemptConnection}">Connect</button>` : nothing}
+                <button @click=${(e) => this.sendPresence("chat")}>🟢 Online </button>
+                <button @click=${(e) => this.sendPresence("away")}>🟡 Away</button> 
+                <button @click=${(e) => this.sendPresence("dnd")}>⛔️ Do not disturb</button>
+                <button @click=${(e) => this.sendPresence("xa")}>🟠 Extended away</button>
+
+                <hr/>
+                ${this.status === "connected" ? html`<button @click="${() => this.connection.disconnect()}">🛑 Disconnect</button>` : nothing}
+                ${this.status === "connecting" ? html`<button disabled>🟢 Connecting</button>` : nothing}
+                ${this.status === "disconnecting" ? html`<button disabled>🛑 Disconnecting</button>` : nothing}
+                ${this.status === "disconnected" ? html`<button @click="${this.attemptConnection}">🟢 Connect</button>` : nothing}
               </div>
             </div>
             </div>
@@ -215,7 +254,7 @@ export class AppComponent extends LitElement {
             to: messageElement?.getAttribute("to") ?? undefined,
             body: messageElement?.textContent ?? undefined,
           }
-          return html`<li>${new Date(message.stamp!).toLocaleTimeString()} : ${message.from} <br/> ${message.body}</li>`
+          return html`<li>${new Date(message.stamp!).toLocaleTimeString()} : <span title="${message.from}">${getNodeFromJid(message.from)}</span> <br/> ${message.body}</li>`
         })}
       </div>
       <hr style="width:100%">
@@ -232,6 +271,7 @@ export class AppComponent extends LitElement {
         <input type="text" style="flex: 1;" id="text" name="text" />
         <button type="submit"
         >Send</button>
+        <label><input type="checkbox" ?checked=${this.isScrolledToBottom} @change=${(c) => (this.isScrolledToBottom = !this.isScrolledToBottom)}>Scroll on new messages</label>
       </div>
       </form>
     `
@@ -252,6 +292,17 @@ export class AppComponent extends LitElement {
               ${getNodeFromJid(item.jid)}
           </li>`
       )}</ul>`
+  }
+
+  sendPresence(presence: "chat" | "away" | "dnd" | "xa", status?: string) {
+    try {
+      this.connection.sendPresence({}, [createElement("show", {}, presence), createElement("status", {}, status ?? "")])
+      this.presence = presence
+    } catch (e) {
+      console.log("ERROR")
+      this.presence = ""
+      console.error(e)
+    }
   }
 
   updateJid(jid: string) {

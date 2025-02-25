@@ -223,7 +223,7 @@ export class XMPPConnection implements XMPPPluginAPI {
     this.internalSend(createElement("message", { from: this.jid, ...attrs }, children))
   }
 
-  sendPresence(attrs?: { to?: string; type?: string }, children?: XmlElement) {
+  sendPresence(attrs?: { to?: string; type?: string }, children?: XmlNode) {
     this.internalSend(presenceStanza(attrs, children))
   }
 }

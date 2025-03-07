@@ -23,19 +23,6 @@ export const withStreamManagement = (connection: XMPPConnection) => {
     return createElement("a", { xmlns: namespace, h: counts.incoming.toString() })
   })
 
-  const connectionExtended = connection as XMPPConnection & { resumeStream: () => Promise<void> }
-
-  connectionExtended.resumeStream = async () => {
-    if (smContext.enabled && smContext.id) {
-      await connection.sendAsync(resumeStream(counts.outgoing.toString(), smContext.id), (e) => {
-        console.log(e.outerHTML)
-        if (e.tagName === "failed") {
-          detectErrors(e)
-        }
-      })
-    }
-  }
-
   connection.onConnectionStatusChange(async (status) => {
     if (status === XMPPConnectionState.Connected) {
       const canEnable = connection.context.features?.some((x) => x.xmlns === namespace && x.name == "sm")

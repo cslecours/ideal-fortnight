@@ -17,7 +17,6 @@ export class AppLayout extends LitElement {
     }
     .left {
         border-right: 1px solid #ccc;
-        padding: 1rem 0 1rem 0;
     }
     .center {
         padding: 0.5rem;

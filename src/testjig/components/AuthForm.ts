@@ -1,5 +1,5 @@
 export class AuthForm extends HTMLElement {
-  public data: Partial<Record<"url" | "user" | "password", string | undefined>> = {}
+  public data?: Partial<Record<"url" | "user" | "password", string | undefined>> = {}
 
   constructor() {
     super()

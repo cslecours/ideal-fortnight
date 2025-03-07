@@ -2,7 +2,7 @@ import { LitElement, html, css, nothing, PropertyValues } from "lit"
 import { customElement, property, state } from "lit/decorators.js"
 import { repeat } from "lit/directives/repeat.js"
 import { withCarbons } from "../../lib/xmpp/plugins/Carbon"
-import { withStreamManagement } from "../../lib/xmpp/plugins/StreamManagement"
+import { resumeStream, withStreamManagement } from "../../lib/xmpp/plugins/StreamManagement"
 import { XMPPConnection } from "../../lib/xmpp/XMPPConnection"
 import "./AppLayout"
 import { getBareJidFromJid, getDomain, getNodeFromJid, getResourceFromJid } from "../../lib/xmpp/jid"
@@ -53,6 +53,7 @@ export class AppComponent extends LitElement {
   @state() roster: RosterItem[] = []
   @state() messages: any[] = []
   @state() presence = ""
+  presenceData = new Map<string, [string, string]>()
 
   rosterPlugin = new Roster(this.connection)
   discoPlugin = new DiscoPlugin(this.connection)
@@ -112,6 +113,16 @@ export class AppComponent extends LitElement {
       }
     })
 
+    this.connection.on({ tagName: "presence", xmlns: "jabber:client" }, (el: Element) => {
+      const jid = el.getAttribute("from")
+      const type = el.getAttribute("type")
+
+      if (jid) {
+        console.log("SETTING", getBareJidFromJid(jid), type, el.innerHTML)
+        this.presenceData.set(getBareJidFromJid(jid), [type ?? "", type ?? ""])
+      }
+    })
+
     this.rosterPlugin.onRosterPush((item, list) => {
       this.roster = this.rosterPlugin.state
     })
@@ -160,17 +171,25 @@ export class AppComponent extends LitElement {
     }
   }
 
-  attemptConnection() {
-    this.connection.connect({
-      url: this.authData!.url,
-      auth: {
-        authcid: getNodeFromJid(this.authData!.user)!,
-        authzid: getBareJidFromJid(this.authData!.user)!,
-        domain: getDomain(this.authData!.user)!,
-        resource: getResourceFromJid(this.authData!.user) + crypto.randomUUID().slice(30),
-        pass: this.authData!.password.trim(),
-      },
-    })
+  async attemptConnection(skipBind = false) {
+    if (this.authData?.user && this.authData?.password && this.authData?.url) {
+      await this.connection.connect({
+        url: this.authData.url,
+        auth: {
+          authcid: getNodeFromJid(this.authData.user),
+          authzid: getBareJidFromJid(this.authData.user),
+          domain: getDomain(this.authData.user),
+          resource: getResourceFromJid(this.authData.user) + crypto.randomUUID().slice(30),
+          pass: this.authData.password.trim(),
+        },
+        skipBind: skipBind,
+      })
+      if (skipBind) {
+        this.connection.sendAsync(resumeStream())
+      }
+    } else {
+      this.shadowRoot?.querySelector<HTMLDialogElement>("#settingsDialog")?.showModal()
+    }
   }
 
   disconnectedCallback(): void {
@@ -182,38 +201,7 @@ export class AppComponent extends LitElement {
     return html`
             <app-layout>
             <div slot="header" style="display:flex; gap: 1rem; padding: 1rem;">
-            <button @click="${() => (this.shadowRoot?.getElementById("settingsDialog") as HTMLDialogElement).showModal()}">Settings</button>
-            <dialog id="settingsDialog">
-              <auth-form method="dialog" @submit="${(e) => {
-                this.authData = e.detail
-                localStorage.setItem("xmpp-server-url", e.detail.url ?? "")
-                localStorage.setItem("xmpp-user", e.detail.user ?? "")
-                localStorage.setItem("xmpp-password", e.detail.password ?? "")
-                this.shadowRoot?.querySelector<HTMLDialogElement>("#settingsDialog")?.close()
-              }}" .data="${this.authData}"></auth-form>
-            </dialog>
-            <div style="flex: 1;"></div>
-            <div>
-              <button popovertarget="user-menu">
-                ${this.presence === "chat" ? "🟢" : ""}
-                ${this.presence === "dnd" ? "⛔️" : ""}
-                ${this.presence === "away" ? "🟡" : ""}
-                ${this.presence === "xa" ? "🟠" : ""}
-                ${this.authData?.user} 
-                ${this.status === "disconnected" ? "⚪️" : ""}
-              </button>
-              <div popover id="user-menu">
-                <button @click=${(e) => this.sendPresence("chat")}>🟢 Online </button>
-                <button @click=${(e) => this.sendPresence("away")}>🟡 Away</button> 
-                <button @click=${(e) => this.sendPresence("dnd")}>⛔️ Do not disturb</button>
-                <button @click=${(e) => this.sendPresence("xa")}>🟠 Extended away</button>
-
-                <hr/>
-                ${this.status === "connected" ? html`<button @click="${() => this.connection.disconnect()}">🛑 Disconnect</button>` : nothing}
-                ${this.status === "connecting" ? html`<button disabled>🟢 Connecting</button>` : nothing}
-                ${this.status === "disconnecting" ? html`<button disabled>🛑 Disconnecting</button>` : nothing}
-                ${this.status === "disconnected" ? html`<button @click="${this.attemptConnection}">🟢 Connect</button>` : nothing}
-              </div>
+              ${this.renderHeader()}
             </div>
             </div>
             <div slot="list">
@@ -226,9 +214,51 @@ export class AppComponent extends LitElement {
         `
   }
 
+  private renderHeader() {
+    return html`<button @click="${() => (this.shadowRoot?.getElementById("settingsDialog") as HTMLDialogElement).showModal()}">Settings</button>
+    <dialog id="settingsDialog">
+      <auth-form method="dialog" @submit="${(e) => {
+        this.authData = e.detail
+        localStorage.setItem("xmpp-server-url", e.detail.url ?? "")
+        localStorage.setItem("xmpp-user", e.detail.user ?? "")
+        localStorage.setItem("xmpp-password", e.detail.password ?? "")
+        this.shadowRoot?.querySelector<HTMLDialogElement>("#settingsDialog")?.close()
+      }}" .data="${this.authData}"></auth-form>
+    </dialog>
+    <div style="flex: 1;"></div>
+    <div>
+      <button popovertarget="user-menu">
+        ${this.presence === "chat" ? "🟢" : ""}
+        ${this.presence === "dnd" ? "⛔️" : ""}
+        ${this.presence === "away" ? "🟡" : ""}
+        ${this.presence === "xa" ? "🟠" : ""}
+        ${this.authData?.user} 
+        ${this.status === "disconnected" ? "⚪️" : ""}
+      </button>
+      <div popover id="user-menu">
+        ${
+          this.status === "connected"
+            ? html`
+        <button @click=${(e) => this.sendPresence("chat")}>🟢 Online </button>
+        <button @click=${(e) => this.sendPresence("away")}>🟡 Away</button> 
+        <button @click=${(e) => this.sendPresence("dnd")}>⛔️ Do not disturb</button>
+        <button @click=${(e) => this.sendPresence("xa")}>🟠 Extended away</button>
+        <button @click="${() => this.sendPresence((prompt('Presence = "chat" | "away" | "dnd" | "xa"', "chat") as Parameters<typeof this.sendPresence>[0]) ?? "chat", prompt("Status") ?? "")}">Set Status</button>
+        <hr/>
+        `
+            : nothing
+        }
+        ${this.status === "connected" ? html`<button @click="${() => this.connection.disconnect()}">🛑 Disconnect</button>` : nothing}
+        ${this.status === "connecting" ? html`<button disabled>🟢 Connecting</button>` : nothing}
+        ${this.status === "disconnecting" ? html`<button disabled>🛑 Disconnecting</button>` : nothing}
+        ${this.status === "disconnected" ? html`<button @click="${this.attemptConnection}">🟢 Connect</button>` : nothing}
+        ${this.status === "disconnected" ? html`<button @click="${this.attemptConnection(true)}">Pause</button>` : nothing}
+      </div>`
+  }
+
   private renderChatScreen() {
     return html`
-      <header>${this.jid}</header>
+      <header>${this.jid} : ${this.presenceData.get(this.jid)}</header>
       <hr style="width:100%">
       <div id="messages" style="overflow-y: auto; height: 100%;">
         ${
@@ -246,15 +276,8 @@ export class AppComponent extends LitElement {
           }}>Load more</button>`
         }
         ${this.messages.map((c) => {
-          const messageElement = c.querySelector("forwarded message") ?? c.querySelector("message") ?? c
-          const message = {
-            id: messageElement?.getAttribute("id") ?? "",
-            stamp: c?.querySelector("delay")?.getAttribute("stamp") ?? undefined,
-            from: messageElement?.getAttribute("from") ?? undefined,
-            to: messageElement?.getAttribute("to") ?? undefined,
-            body: messageElement?.textContent ?? undefined,
-          }
-          return html`<li>${new Date(message.stamp!).toLocaleTimeString()} : <span title="${message.from}">${getNodeFromJid(message.from)}</span> <br/> ${message.body}</li>`
+          const message = this.mapMessage(c)
+          return html`<li>${new Date(message.stamp!).toLocaleTimeString()} : <span title="${message.from ?? ""}">${getNodeFromJid(message.from ?? "")}</span> <br/> ${message.body}</li>`
         })}
       </div>
       <hr style="width:100%">
@@ -305,9 +328,24 @@ export class AppComponent extends LitElement {
     }
   }
 
+  mapMessage(c: Element) {
+    const messageElement = c.querySelector("forwarded message") ?? c.querySelector("message") ?? c
+    const date = c?.querySelector("delay")?.getAttribute("stamp")
+    const message = {
+      id: messageElement?.getAttribute("id") ?? "",
+      stamp: date ? new Date(date) : undefined,
+      from: messageElement?.getAttribute("from") ?? undefined,
+      to: messageElement?.getAttribute("to") ?? undefined,
+      body: messageElement?.textContent ?? undefined,
+    }
+
+    return message
+  }
+
   updateJid(jid: string) {
     this.result = undefined
     this.jid = jid
+
     this.mamPlugin.query({ jid: jid, max: 10, queryid: crypto.randomUUID() }).then((result) => {
       this.messages = result.results.map((c) => c)
       this.result = result

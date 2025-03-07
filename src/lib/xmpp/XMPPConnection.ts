@@ -16,7 +16,6 @@ import { doAuth } from "./auth/auth"
 import { getXmlSerializer } from "../xml/shims"
 import { XMPPPluginAPI } from "./XMPP.api"
 import { createElement } from "../xml/createElement"
-import { getBareJidFromJid } from "./jid"
 
 export enum XMPPConnectionState {
   None = "none",
@@ -186,7 +185,7 @@ export class XMPPConnection implements XMPPPluginAPI {
     this.context.features = await this.sendAsync(openStanza(auth.domain), (el) => (isStreamFeatures(el) ? featureDetection(el) : null))
   }
 
-  async connect({ url, auth }: { url: string | URL; auth: AuthData }): Promise<void> {
+  async connect({ url, auth, skipBind }: { url: string | URL; auth: AuthData; skipBind?: boolean }): Promise<void> {
     this.status$.next(XMPPConnectionState.Connecting)
 
     this.context = { domain: auth.domain }
@@ -199,8 +198,11 @@ export class XMPPConnection implements XMPPPluginAPI {
     const mechanisms = hasFeature(this.context.features, "mechanisms", Namespaces.SASL) ?? []
     await doAuth(this, mechanisms, auth)
     await this.requestFeatures(auth)
-    const [jid] = await Promise.all([this.doBind(auth)])
-    if (jid) this.jid = jid
+
+    if (skipBind) {
+      const [jid] = await Promise.all([this.doBind(auth)])
+      if (jid) this.jid = jid
+    }
 
     this.status$.next(XMPPConnectionState.Connected)
   }

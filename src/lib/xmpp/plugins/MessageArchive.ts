@@ -8,19 +8,26 @@ import { XMPPConnection } from "../XMPPConnection"
 
 const xmlns = "urn:xmpp:mam:2"
 
+export interface QueryOptions {
+  jid: string
+  queryid?: string
+  before?: string
+  after?: string
+  max?: number
+}
+
+export interface QueryResult {
+  results: Element[]
+  set: { count?: number }
+  hasNextPage: boolean
+  nextPageParams: () => false | QueryOptions
+  previousPageParams: () => false | QueryOptions
+}
+
 export class MessageArchiveManagementPlugin {
   constructor(private xmpp: XMPPConnection) {}
 
-  query(
-    options: { jid: string; queryid?: string; before?: string; after?: string; max?: number },
-    queryChildren: XmlElement[] = []
-  ): Promise<{
-    results: Element[]
-    set: { count?: number }
-    hasNextPage: boolean
-    nextPageParams: () => boolean | Parameters<MessageArchiveManagementPlugin["query"]>[0]
-    previousPageParams: () => boolean | Parameters<MessageArchiveManagementPlugin["query"]>[0]
-  }> {
+  query(options: QueryOptions, queryChildren: XmlElement[] = []): Promise<QueryResult> {
     const result: Element[] = []
     const id = crypto.randomUUID()
     const queryid = options.queryid ?? crypto.randomUUID()

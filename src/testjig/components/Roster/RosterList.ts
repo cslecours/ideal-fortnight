@@ -20,7 +20,12 @@ export class RosterList extends LitElement {
       ${this.roster.map(
         (item) =>
           html`
-          <roster-item @click=${() => this.dispatchEvent(new CustomEvent<string>("selected", { detail: item.jid }))} ?selected=${this.jid === item.jid} .name=${item.name} .jid=${item.jid} .status=${item.status}>
+          <roster-item @click=${() => this.dispatchEvent(new CustomEvent<string>("selected", { detail: item.jid }))} 
+            ?selected=${this.jid === item.jid} 
+            .name=${item.name} 
+            .jid=${item.jid} 
+            .status=${item.status ?? ""}
+            >
             ${item.name}
           </roster-item>`
       )}`

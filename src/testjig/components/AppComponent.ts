@@ -7,7 +7,7 @@ import { getBareJidFromJid, getDomain, getNodeFromJid, getResourceFromJid } from
 import { Roster, RosterItem } from "../../lib/xmpp/roster/RosterPlugin"
 import { createElement } from "../../lib/xml/createElement"
 import { DiscoPlugin } from "../../lib/xmpp/disco/discoPlugin"
-import { MessageArchiveManagementPlugin } from "../../lib/xmpp/plugins/MessageArchive"
+import { MessageArchiveManagementPlugin, QueryResult } from "../../lib/xmpp/plugins/MessageArchive"
 import { render } from "../../lib/xml/render"
 import { parseXml } from "../../lib/xml/parseXml"
 import "./AppLayout"
@@ -51,7 +51,7 @@ export class AppComponent extends LitElement {
     position: absolute;
     inset: unset;
     top: 40px;
-    right: 1rem;
+    left: 1rem;
     border: none;
     background: #444;
   }
@@ -82,13 +82,7 @@ export class AppComponent extends LitElement {
   discoPlugin = new DiscoPlugin(this.connection)
   mamPlugin = new MessageArchiveManagementPlugin(this.connection)
 
-  result?: {
-    results: Element[]
-    set: { count?: number }
-    hasNextPage: boolean
-    nextPageParams: () => boolean | Parameters<MessageArchiveManagementPlugin["query"]>[0]
-    previousPageParams: () => boolean | Parameters<MessageArchiveManagementPlugin["query"]>[0]
-  }
+  result?: QueryResult
   listObserver: MutationObserver
 
   connectedCallback(): void {
@@ -178,7 +172,7 @@ export class AppComponent extends LitElement {
         const element = this.shadowRoot?.querySelector("#messages")!
 
         if (this.isScrolledToBottom) {
-          element.lastElementChild?.scrollIntoView({ behavior: "smooth" })
+          element.lastElementChild?.scrollIntoView({ behavior: this.messages.length > 20 ? "smooth" : "instant" })
         }
       })
       this.listObserver.observe(this.shadowRoot.querySelector("#messages")!, { childList: true })
@@ -210,8 +204,11 @@ export class AppComponent extends LitElement {
   render() {
     return html`
             <app-layout>
-            <div slot="header" class="header-slot">
-              ${this.renderHeader()}
+              <div slot="header" class="header-slot">
+                ${this.renderHeader()}
+              </div>
+            <div slot="subroute-header" class="header-slot">
+              ${this.renderChatHeader()}
             </div>
             </div>
             <div slot="list" class="list-slot">
@@ -226,54 +223,58 @@ export class AppComponent extends LitElement {
   }
 
   private renderHeader() {
+    return html`<div>
+    <button popovertarget="user-menu">
+      ${this.presence === "chat" ? "🟢" : ""}
+      ${this.presence === "dnd" ? "⛔️" : ""}
+      ${this.presence === "away" ? "🟡" : ""}
+      ${this.presence === "xa" ? "🟠" : ""}
+      ${this.authData?.user} 
+      ${this.status === "disconnected" ? "⚪️" : ""}
+    </button>
+    <div popover id="user-menu">
+      ${
+        this.status === "connected"
+          ? html`
+      <button @click=${(e) => this.sendPresence("chat")}>🟢 Online </button>
+      <button @click=${(e) => this.sendPresence("away")}>🟡 Away</button> 
+      <button @click=${(e) => this.sendPresence("dnd")}>⛔️ Do not disturb</button>
+      <button @click=${(e) => this.sendPresence("xa")}>🟠 Extended away</button>
+      <button @click="${() => this.sendPresence((prompt('Presence = "chat" | "away" | "dnd" | "xa"', "chat") as Parameters<typeof this.sendPresence>[0]) ?? "chat", prompt("Status") ?? "")}">Set Status</button>
+      <hr/>
+      `
+          : nothing
+      }
+      ${this.status === "connected" ? html`<button @click="${() => this.connection.disconnect()}">🛑 Disconnect</button>` : nothing}
+      ${this.status === "connecting" ? html`<button disabled>🟢 Connecting</button>` : nothing}
+      ${this.status === "disconnecting" ? html`<button disabled>🛑 Disconnecting</button>` : nothing}
+      ${this.status === "disconnected" ? html`<button @click="${this.attemptConnection}">🟢 Connect</button>` : nothing}
+    </div>
+    ${
+      this.status === "disconnected"
+        ? html`
+    <button @click="${() => (this.shadowRoot?.getElementById("settingsDialog") as HTMLDialogElement).showModal()}">Settings</button>
+    <dialog id="settingsDialog">
+      <auth-form method="dialog" @submit="${(e) => {
+        this.authData = e.detail
+        localStorage.setItem("xmpp-server-url", e.detail.url ?? "")
+        localStorage.setItem("xmpp-user", e.detail.user ?? "")
+        localStorage.setItem("xmpp-password", e.detail.password ?? "")
+        this.shadowRoot?.querySelector<HTMLDialogElement>("#settingsDialog")?.close()
+      }}" .data="${this.authData}"></auth-form>
+    </dialog>
+    `
+        : nothing
+    }
+  </div>`
+  }
+
+  private renderChatHeader() {
     return html`
     <div style="flex: 1;align-self: center;">
       <span title="${this.jid}">${this.roster.find((c) => c.jid === this.jid)?.name} ${this.presenceData.get(this.jid)?.[0] ?? ""}</span>
     </div>
-    <div>
-      <button popovertarget="user-menu">
-        ${this.presence === "chat" ? "🟢" : ""}
-        ${this.presence === "dnd" ? "⛔️" : ""}
-        ${this.presence === "away" ? "🟡" : ""}
-        ${this.presence === "xa" ? "🟠" : ""}
-        ${this.authData?.user} 
-        ${this.status === "disconnected" ? "⚪️" : ""}
-      </button>
-      <div popover id="user-menu">
-        ${
-          this.status === "connected"
-            ? html`
-        <button @click=${(e) => this.sendPresence("chat")}>🟢 Online </button>
-        <button @click=${(e) => this.sendPresence("away")}>🟡 Away</button> 
-        <button @click=${(e) => this.sendPresence("dnd")}>⛔️ Do not disturb</button>
-        <button @click=${(e) => this.sendPresence("xa")}>🟠 Extended away</button>
-        <button @click="${() => this.sendPresence((prompt('Presence = "chat" | "away" | "dnd" | "xa"', "chat") as Parameters<typeof this.sendPresence>[0]) ?? "chat", prompt("Status") ?? "")}">Set Status</button>
-        <hr/>
-        `
-            : nothing
-        }
-        ${this.status === "connected" ? html`<button @click="${() => this.connection.disconnect()}">🛑 Disconnect</button>` : nothing}
-        ${this.status === "connecting" ? html`<button disabled>🟢 Connecting</button>` : nothing}
-        ${this.status === "disconnecting" ? html`<button disabled>🛑 Disconnecting</button>` : nothing}
-        ${this.status === "disconnected" ? html`<button @click="${this.attemptConnection}">🟢 Connect</button>` : nothing}
-      </div>
-      ${
-        this.status === "disconnected"
-          ? html`
-      <button @click="${() => (this.shadowRoot?.getElementById("settingsDialog") as HTMLDialogElement).showModal()}">Settings</button>
-      <dialog id="settingsDialog">
-        <auth-form method="dialog" @submit="${(e) => {
-          this.authData = e.detail
-          localStorage.setItem("xmpp-server-url", e.detail.url ?? "")
-          localStorage.setItem("xmpp-user", e.detail.user ?? "")
-          localStorage.setItem("xmpp-password", e.detail.password ?? "")
-          this.shadowRoot?.querySelector<HTMLDialogElement>("#settingsDialog")?.close()
-        }}" .data="${this.authData}"></auth-form>
-      </dialog>
-      `
-          : nothing
-      }
-    </div>`
+    `
   }
 
   private renderChatScreen() {

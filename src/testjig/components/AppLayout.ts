@@ -11,10 +11,10 @@ export class AppLayout extends LitElement {
         background: #333;
         height: 100vh;
     }
-    .top {
-        grid-column: span 2;
+    .top, .top-center {
         border-bottom: 1px solid #ccc;
     }
+    
     .left {
         border-right: 1px solid #ccc;
     }
@@ -28,6 +28,9 @@ export class AppLayout extends LitElement {
       <div class="top">
         <slot name="header"></slot>
       </div>
+      <div class="top-center">
+        <slot name="subroute-header"></slot>
+      </div>      
       <div class="left">
         <slot name="list"></slot>
       </div>

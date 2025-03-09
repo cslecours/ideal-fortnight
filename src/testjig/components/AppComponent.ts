@@ -1,5 +1,5 @@
 import { LitElement, html, css, nothing, PropertyValues } from "lit"
-import { customElement, property, state } from "lit/decorators.js"
+import { customElement, state } from "lit/decorators.js"
 import { withCarbons } from "../../lib/xmpp/plugins/Carbon"
 import { withStreamManagement } from "../../lib/xmpp/plugins/StreamManagement"
 import { XMPPConnection } from "../../lib/xmpp/XMPPConnection"
@@ -163,15 +163,6 @@ export class AppComponent extends LitElement {
         })
         this.presence = "chat"
         this.connection.sendPresence({ type: "available" })
-
-        // const discoInfoQuery = this.discoPlugin.sendDiscoInfoQuery(this.connection.context.domain!)
-        // discoInfoQuery.then((c) => {
-        //   console.log("Disco Info", c)
-        // })
-        // const discoItemQuery = this.discoPlugin.sendDiscoItemQuery(this.connection.context.domain!)
-        // discoItemQuery.then((x) => {
-        //   console.log("Disco Items", x)
-        // })
       }
     })
 

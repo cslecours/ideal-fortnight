@@ -37,10 +37,16 @@ export class AppComponent extends LitElement {
     border: none;
     background: #444;
   }
-  hr {
-    width:100%;
-    border-style: solid;
-    border-color: #777;
+
+  .form {
+    border-top: 1px solid #ccc;
+    padding: 0.5rem;
+  }
+
+  .form-line {
+    display:flex;
+    flex-direction:row;
+    gap: 1rem;
   }
   `
 
@@ -135,7 +141,7 @@ export class AppComponent extends LitElement {
         this.rosterPlugin.getRoster().then((list) => {
           console.log("Roster", list)
           this.roster = list
-          this.jid = this.roster.find(Boolean)?.jid!
+          this.updateJid(this.roster.find(Boolean)?.jid!)
         })
         this.presence = "chat"
         this.connection.sendPresence({ type: "available" })
@@ -205,6 +211,7 @@ export class AppComponent extends LitElement {
             <div slot="subroute" style="height:100%; display:flex; flex-direction: column; overflow-y: overlay;">
               ${this.renderChatScreen()}
             </div>
+            </div>
             </app-layout>
         `
   }
@@ -262,7 +269,7 @@ export class AppComponent extends LitElement {
 
   private renderChatScreen() {
     return html`
-      <div id="messages" style="overflow-y: auto; height: 100%;">
+      <div id="messages" style="overflow-y: auto; height: 100%; padding: 0 0.5rem;">
         ${
           this.result &&
           this.result.hasNextPage &&
@@ -277,13 +284,20 @@ export class AppComponent extends LitElement {
             }
           }}>Load more</button>`
         }
-        ${this.messages.map((c) => {
+        ${this.messages.map((c, index) => {
           const message = this.mapMessage(c)
-          return html`<li>${new Date(message.stamp!).toLocaleTimeString()} : <span title="${message.from ?? ""}">${getNodeFromJid(message.from ?? "")}</span> <br/> ${message.body}</li>`
+          return this.renderMessage(
+            message,
+            new Date(
+              this.messages
+                .at(index - 1)
+                ?.querySelector("delay")
+                ?.getAttribute("stamp")
+            )
+          )
         })}
       </div>
-      <hr style="width:100%">
-      <form @submit="${(e) => {
+      <form class="form" @submit="${(e) => {
         e.preventDefault()
         this.connection.sendMessage(
           { to: this.jid, type: "chat" },
@@ -292,14 +306,50 @@ export class AppComponent extends LitElement {
         e.target.reset()
       }}"
         >
-        <div style="display:flex;">
-        <input type="text" style="flex: 1;" id="text" name="text" />
+        <div class="form-line">
+        <input type="text" style="flex: 1; height:30px; padding-left:4px;" id="text" name="text" placeholder="Send a message"/>
         <button type="submit"
         >Send</button>
-        <label><input type="checkbox" ?checked=${this.isScrolledToBottom} @change=${(c) => (this.isScrolledToBottom = !this.isScrolledToBottom)}>Scroll on new messages</label>
-      </div>
+        </div>
+        <div class="form-line"><label><input type="checkbox" ?checked=${this.isScrolledToBottom} @change=${(c) => (this.isScrolledToBottom = !this.isScrolledToBottom)}>Scroll on new messages</label></div>
       </form>
     `
+  }
+  renderMessage(
+    message: {
+      id: string
+      stamp: Date | undefined
+      from: string | undefined
+      to: string | undefined
+      body: string | undefined
+    },
+    lastMessageTimeStamp: Date
+  ): any {
+    const lastMessageInSameMinute = (message.stamp?.getTime() || 0) - 1000 * 60 < (lastMessageTimeStamp?.getTime() || 0)
+    const date = message.stamp?.toLocaleTimeString()
+    const name = this.roster.find((c) => c.jid === getBareJidFromJid(message.from!))?.name ?? message.from
+    const isFromMe = getBareJidFromJid(message.from ?? "") === getBareJidFromJid(this.connection.jid ?? "")
+    console.log(lastMessageInSameMinute)
+    return html`
+    <div>
+      ${
+        lastMessageInSameMinute
+          ? nothing
+          : html`
+          <div style="text-align:center"><span style="color:#999;">${date}</span></div>
+          `
+      }
+      <div style="display:flex; flex-direction: ${isFromMe ? "row-reverse" : "row"};">
+      <div style="font-size:80%; display:flex; flex-direction: ${isFromMe ? "row-reverse" : "row"};"></div>
+            <span title="${message.from ?? ""}">${name}</span>
+          </div>
+        <div class="content" style="display:flex; flex-direction: ${isFromMe ? "row-reverse" : "row"};">
+          <div style="padding: 0.5rem; border-radius: 8px; background:#0aa;">
+            ${message.body}
+          </div>
+        </div>
+        </div>
+      </div>`
   }
   private renderRoster() {
     return html`

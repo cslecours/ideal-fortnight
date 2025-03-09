@@ -19,7 +19,6 @@ export class AppLayout extends LitElement {
         border-right: 1px solid #ccc;
     }
     .center {
-        padding: 0.5rem;
         overflow-y: overlay;
     }
 `

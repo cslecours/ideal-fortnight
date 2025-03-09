@@ -18,6 +18,24 @@ import "./Roster/RosterItem"
 export class AppComponent extends LitElement {
   static styles = css`
 
+  #messages {
+    overflow-y: auto; height: 100%; padding: 0 0.5rem;
+  }
+  .message-bubble {
+    padding: 0.5rem; border-radius: 8px;  max-width:65%; 
+  }
+
+  .header-slot {
+    display:flex; gap: 1rem; padding: 1rem;
+  }
+  .list-slot{
+    height:100%; display:flex; flex-direction: column; overflow-y: overlay; justify-content: stretch;
+  }
+
+  .subroute-slot {
+    height:100%; display:flex; flex-direction: column; overflow-y: overlay;
+  }
+
   #user-menu button {
     text-align:left;
   }
@@ -201,14 +219,14 @@ export class AppComponent extends LitElement {
   render() {
     return html`
             <app-layout>
-            <div slot="header" style="display:flex; gap: 1rem; padding: 1rem;">
+            <div slot="header" class="header-slot">
               ${this.renderHeader()}
             </div>
             </div>
-            <div slot="list" style="height:100%; display:flex; flex-direction: column; overflow-y: overlay; justfiy-content: stretch;">
+            <div slot="list" class="list-slot">
               ${this.status === "connected" ? this.renderRoster() : html``}
             </div>
-            <div slot="subroute" style="height:100%; display:flex; flex-direction: column; overflow-y: overlay;">
+            <div slot="subroute" class="subroute-slot">
               ${this.renderChatScreen()}
             </div>
             </div>
@@ -269,7 +287,7 @@ export class AppComponent extends LitElement {
 
   private renderChatScreen() {
     return html`
-      <div id="messages" style="overflow-y: auto; height: 100%; padding: 0 0.5rem;">
+      <div id="messages">
         ${
           this.result &&
           this.result.hasNextPage &&
@@ -344,7 +362,7 @@ export class AppComponent extends LitElement {
             <span title="${message.from ?? ""}">${name}</span>
           </div>
         <div class="content" style="display:flex; flex-direction: ${isFromMe ? "row-reverse" : "row"};">
-          <div style="padding: 0.5rem; border-radius: 8px; background:#0aa;">
+          <div class="message-bubble" style="background: ${isFromMe ? "#0aa" : "#777"};">
             ${message.body}
           </div>
         </div>

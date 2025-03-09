@@ -12,7 +12,7 @@ import { render } from "../../lib/xml/render"
 import { parseXml } from "../../lib/xml/parseXml"
 import "./AppLayout"
 import "./AuthForm"
-import "./Roster/RosterItem"
+import "./Roster/RosterList"
 
 @customElement("app-component")
 export class AppComponent extends LitElement {
@@ -215,7 +215,7 @@ export class AppComponent extends LitElement {
             </div>
             </div>
             <div slot="list" class="list-slot">
-              ${this.status === "connected" ? this.renderRoster() : html``}
+              ${this.renderRoster()}
             </div>
             <div slot="subroute" class="subroute-slot">
               ${this.renderChatScreen()}
@@ -361,15 +361,8 @@ export class AppComponent extends LitElement {
       </div>`
   }
   private renderRoster() {
-    return html`
-      <div style="padding:0; flex: 1;">
-      ${this.roster.map(
-        (item) =>
-          html`
-          <roster-item @click=${() => this.updateJid(item.jid)} ?selected=${this.jid === item.jid} .name=${item.name} .jid=${item.jid} .status=${this.presenceData.get(item.jid)?.[0] ?? ""}>
-            ${item.name}
-          </roster-item>`
-      )}</div>
+    if (this.isConnected) {
+      return html`<roster-list .jid=${this.jid} @selected=${(event: CustomEvent<string>) => this.updateJid(event.detail)} .roster=${this.roster}></roster-list>
       <div style="display: flex; flex-direction: column; padding: 0.5rem;">
       <button @click=${(e) => {
         const jid = prompt("JID to Add To Roster")
@@ -379,6 +372,8 @@ export class AppComponent extends LitElement {
         this.rosterPlugin.sendRosterSet(jid, name)
       }}>Add to Roster</button>
       </div>`
+    }
+    return nothing
   }
 
   sendPresence(presence: "chat" | "away" | "dnd" | "xa", status?: string) {

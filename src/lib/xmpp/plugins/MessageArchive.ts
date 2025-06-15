@@ -34,7 +34,7 @@ export class MessageArchiveManagementPlugin {
     const xmppRequest = this.xmpp.sendAsync(
       iqStanza(
         "set",
-        { to: options.jid, id: id },
+        { to: options.jid, from: this.xmpp.jid, id: id },
         queryStanzaPart({ xmlns: xmlns, queryid: options.queryid }, [
           ...queryChildren,
           createElement("set", { xmlns: Namespaces.RSM }, [

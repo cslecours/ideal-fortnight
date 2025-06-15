@@ -8,7 +8,6 @@ export class AppLayout extends LitElement {
         display: grid;
         grid-template-rows: auto 1fr;
         grid-template-columns: 25% 1fr;
-        background: #333;
         height: 100vh;
     }
     .top, .top-center {

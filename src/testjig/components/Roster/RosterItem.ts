@@ -16,14 +16,14 @@ export class RosterItem extends LitElement {
 
         }
         :host([selected]) {
-          background-color:#999;
+          background-color:oklch(from var(--background-color)  calc(l - 0.2) c h);
           .name {
             font-weight: bold;
         }
         }
         
         .status {
-            color: #666;
+            color: var(--active-text-color);
         }
     `
 

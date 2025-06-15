@@ -13,16 +13,17 @@ import { parseXml } from "../../lib/xml/parseXml"
 import "./AppLayout"
 import "./AuthForm"
 import "./Roster/RosterList"
+import "./ChatMessage"
 
 @customElement("app-component")
 export class AppComponent extends LitElement {
   static styles = css`
 
   #messages {
-    overflow-y: auto; height: 100%; padding: 0 0.5rem;
-  }
-  .message-bubble {
-    padding: 0.5rem; border-radius: 8px;  max-width:65%; 
+    display:flex;
+    flex-direction: column;
+    overflow-y: auto; height: 100%; padding: 0 var(--padding-base);
+    gap: 0.25rem;
   }
 
   .header-slot {
@@ -53,12 +54,12 @@ export class AppComponent extends LitElement {
     top: 40px;
     left: 1rem;
     border: none;
-    background: #444;
+    
   }
 
   .form {
     border-top: 1px solid #ccc;
-    padding: 0.5rem;
+    padding: var(--padding-base);
   }
 
   .form-line {
@@ -66,6 +67,28 @@ export class AppComponent extends LitElement {
     flex-direction:row;
     gap: 1rem;
   }
+
+  button {
+      --background-color: var(--button-background-color-secondary);
+      --color: var(--button-text-color);
+
+      font-family: var(--font-family);
+      
+      background: var(--background-color);
+      color: var(--color);
+      border-radius: var(--button-border-radius);
+      border: 1px solid var(--border-color);
+      padding: var(--padding-base);
+
+      &:hover {
+        background: oklch(from var(--background-color)  calc(l - 0.1) c h);
+      }
+      
+      &[variant="primary"] {
+        --background-color: var(--button-background-color);
+        --color: var(--button-text-color);
+      }
+    }
   `
 
   connection = withCarbons(withStreamManagement(new XMPPConnection()))
@@ -109,15 +132,19 @@ export class AppComponent extends LitElement {
       }
     })
 
-    // Outgoing message
     this.connection.on({ tagName: "message" }, (el) => {
+      const isChatMarker = el.querySelector("received")
+      if (isChatMarker) {
+        console.warn("CHAT MARKER", isChatMarker)
+        return
+      }
+
       const isRealMessage = !el.querySelector("forwarded")
       if (!isRealMessage) {
         return
       }
 
       el.appendChild(parseXml(render(createElement("delay", { stamp: new Date().toISOString() }))))
-      console.log("Message", el)
       if (this.jid === getBareJidFromJid(el.getAttribute("from")!)) {
         this.messages = [...this.messages, el]
       }
@@ -151,7 +178,6 @@ export class AppComponent extends LitElement {
       }
       if (status === "connected") {
         this.rosterPlugin.getRoster().then((list) => {
-          console.log("Roster", list)
           this.roster = list
           this.updateJid(this.roster.find(Boolean)?.jid!)
         })
@@ -172,6 +198,7 @@ export class AppComponent extends LitElement {
         const element = this.shadowRoot?.querySelector("#messages")!
 
         if (this.isScrolledToBottom) {
+          console.log("SCROLLING TO BOTTOM", element.lastElementChild)
           element.lastElementChild?.scrollIntoView({ behavior: this.messages.length > 20 ? "smooth" : "instant" })
         }
       })
@@ -225,6 +252,7 @@ export class AppComponent extends LitElement {
   private renderHeader() {
     return html`<div>
     <button popovertarget="user-menu">
+      ${this.presence === "" ? "⚪️" : ""}
       ${this.presence === "chat" ? "🟢" : ""}
       ${this.presence === "dnd" ? "⛔️" : ""}
       ${this.presence === "away" ? "🟡" : ""}
@@ -283,7 +311,7 @@ export class AppComponent extends LitElement {
         ${
           this.result &&
           this.result.hasNextPage &&
-          html`<button @click=${() => {
+          html`<div><button @click=${() => {
             const previousPageParams = this.result?.previousPageParams() ?? false
             if (typeof previousPageParams === "object") {
               this.mamPlugin.query(previousPageParams).then((result) => {
@@ -292,7 +320,7 @@ export class AppComponent extends LitElement {
                 this.result = result
               })
             }
-          }}>Load more</button>`
+          }}>Load more</button></div>`
         }
         ${this.messages.map((c, index) => {
           const message = this.mapMessage(c)
@@ -303,7 +331,11 @@ export class AppComponent extends LitElement {
                 .at(index - 1)
                 ?.querySelector("delay")
                 ?.getAttribute("stamp")
-            )
+            ),
+            this.messages
+              .at(index - 1)
+              ?.querySelector("message")
+              ?.getAttribute("from") ?? undefined
           )
         })}
       </div>
@@ -317,7 +349,7 @@ export class AppComponent extends LitElement {
       }}"
         >
         <div class="form-line">
-        <input type="text" style="flex: 1; height:30px; padding-left:4px;" id="text" name="text" placeholder="Send a message"/>
+        <input required type="text" style="flex: 1; height:30px; padding-left:4px;" id="text" name="text" placeholder="Send a message"/>
         <button type="submit"
         >Send</button>
         </div>
@@ -333,38 +365,43 @@ export class AppComponent extends LitElement {
       to: string | undefined
       body: string | undefined
     },
-    lastMessageTimeStamp: Date
+    lastMessageTimeStamp: Date,
+    lastMessageAuthor: string | undefined
   ): any {
     const lastMessageInSameMinute = (message.stamp?.getTime() || 0) - 1000 * 60 < (lastMessageTimeStamp?.getTime() || 0)
-    const date = message.stamp?.toLocaleTimeString()
+    console.log(
+      "Last Message Author",
+      getBareJidFromJid(lastMessageAuthor ?? ""),
+      "Current Message Author",
+      getBareJidFromJid(message.from)
+    )
+    // const lastMessageSameAuthor = getBareJidFromJid(message.from ?? "") === getBareJidFromJid(lastMessageAuthor ?? "")
+    const date = new Intl.DateTimeFormat(undefined, {
+      year: "numeric",
+      month: "long",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(message.stamp))
     const name = this.roster.find((c) => c.jid === getBareJidFromJid(message.from!))?.name ?? message.from
     const isFromMe = getBareJidFromJid(message.from ?? "") === getBareJidFromJid(this.connection.jid ?? "")
-    console.log(lastMessageInSameMinute)
     return html`
-    <div>
-      ${
-        lastMessageInSameMinute
-          ? nothing
-          : html`
-          <div style="text-align:center"><span style="color:#999;">${date}</span></div>
+    <chat-message .isFromMe=${isFromMe}>
+    <span slot="date">${
+      lastMessageInSameMinute
+        ? nothing
+        : html`
+          ${date}
           `
-      }
-      <div style="display:flex; flex-direction: ${isFromMe ? "row-reverse" : "row"};">
-      <div style="font-size:80%; display:flex; flex-direction: ${isFromMe ? "row-reverse" : "row"};"></div>
-            <span title="${message.from ?? ""}">${name}</span>
-          </div>
-        <div class="content" style="display:flex; flex-direction: ${isFromMe ? "row-reverse" : "row"};">
-          <div class="message-bubble" style="background: ${isFromMe ? "#0aa" : "#777"};">
-            ${message.body}
-          </div>
-        </div>
-        </div>
-      </div>`
+    }</span>
+    ${html`<span slot="author" title="${message.from ?? ""}">${name}</span>`}
+    ${message.body}
+    </chat-message>`
   }
   private renderRoster() {
     if (this.isConnected) {
       return html`<roster-list .jid=${this.jid} @selected=${(event: CustomEvent<string>) => this.updateJid(event.detail)} .roster=${this.roster}></roster-list>
-      <div style="display: flex; flex-direction: column; padding: 0.5rem;">
+      <div style="display: flex; flex-direction: column; padding: var(--padding-base);">
       <button @click=${(e) => {
         const jid = prompt("JID to Add To Roster")
         if (!jid) return
@@ -405,9 +442,9 @@ export class AppComponent extends LitElement {
   updateJid(jid: string) {
     this.result = undefined
     this.jid = jid
-
+    this.messages = []
     this.mamPlugin.query({ jid: jid, max: 20, queryid: crypto.randomUUID() }).then((result) => {
-      this.messages = result.results.map((c) => c)
+      this.messages = result.results.filter((c) => !c.querySelector("received") && !c.querySelector("displayed")).map((c) => c)
       this.result = result
     })
   }

@@ -1,4 +1,6 @@
-import { LitElement, html, css, nothing, PropertyValues } from "lit"
+/// <reference types="vite/client" />
+
+import { LitElement, html, css, nothing, PropertyValues, unsafeCSS } from "lit"
 import { customElement, state } from "lit/decorators.js"
 import { withCarbons } from "../../lib/xmpp/plugins/Carbon"
 import { withStreamManagement } from "../../lib/xmpp/plugins/StreamManagement"
@@ -10,6 +12,7 @@ import { DiscoPlugin } from "../../lib/xmpp/disco/discoPlugin"
 import { MessageArchiveManagementPlugin, QueryResult } from "../../lib/xmpp/plugins/MessageArchive"
 import { render } from "../../lib/xml/render"
 import { parseXml } from "../../lib/xml/parseXml"
+import styles from "./AppComponent.styles.css?inline"
 import "./AppLayout"
 import "./AuthForm"
 import "./Roster/RosterList"
@@ -17,79 +20,7 @@ import "./ChatMessage"
 
 @customElement("app-component")
 export class AppComponent extends LitElement {
-  static styles = css`
-
-  #messages {
-    display:flex;
-    flex-direction: column;
-    overflow-y: auto; height: 100%; padding: 0 var(--padding-base);
-    gap: 0.25rem;
-  }
-
-  .header-slot {
-    display:flex; gap: 1rem; padding: 1rem;
-  }
-  .list-slot{
-    height:100%; display:flex; flex-direction: column; overflow-y: overlay; justify-content: stretch;
-  }
-
-  .subroute-slot {
-    height:100%; display:flex; flex-direction: column; overflow-y: overlay;
-  }
-
-  #user-menu button {
-    text-align:left;
-  }
-
-  #user-menu:popover-open {
-    display:flex;
-    flex-direction: column;
-    justify-items: stretch;
-    justify-content: stretch;
-    gap: 4px;
-    min-width: 200px;
-    height: auto;
-    position: absolute;
-    inset: unset;
-    top: 40px;
-    left: 1rem;
-    border: none;
-    
-  }
-
-  .form {
-    border-top: 1px solid #ccc;
-    padding: var(--padding-base);
-  }
-
-  .form-line {
-    display:flex;
-    flex-direction:row;
-    gap: 1rem;
-  }
-
-  button {
-      --background-color: var(--button-background-color-secondary);
-      --color: var(--button-text-color);
-
-      font-family: var(--font-family);
-      
-      background: var(--background-color);
-      color: var(--color);
-      border-radius: var(--button-border-radius);
-      border: 1px solid var(--border-color);
-      padding: var(--padding-base);
-
-      &:hover {
-        background: oklch(from var(--background-color)  calc(l - 0.1) c h);
-      }
-      
-      &[variant="primary"] {
-        --background-color: var(--button-background-color);
-        --color: var(--button-text-color);
-      }
-    }
-  `
+  static styles = unsafeCSS(styles)
 
   connection = withCarbons(withStreamManagement(new XMPPConnection()))
   authData?: { url: string; user: string; password: string }
@@ -326,12 +257,14 @@ export class AppComponent extends LitElement {
           const message = this.mapMessage(c)
           return this.renderMessage(
             message,
-            new Date(
-              this.messages
-                .at(index - 1)
-                ?.querySelector("delay")
-                ?.getAttribute("stamp")
-            ),
+            index === 0
+              ? undefined
+              : new Date(
+                  this.messages
+                    .at(index - 1)
+                    ?.querySelector("delay")
+                    ?.getAttribute("stamp")
+                ),
             this.messages
               .at(index - 1)
               ?.querySelector("message")
@@ -365,7 +298,7 @@ export class AppComponent extends LitElement {
       to: string | undefined
       body: string | undefined
     },
-    lastMessageTimeStamp: Date,
+    lastMessageTimeStamp: Date | undefined,
     lastMessageAuthor: string | undefined
   ): any {
     const lastMessageInSameMinute = (message.stamp?.getTime() || 0) - 1000 * 60 < (lastMessageTimeStamp?.getTime() || 0)
@@ -385,8 +318,11 @@ export class AppComponent extends LitElement {
     }).format(new Date(message.stamp))
     const name = this.roster.find((c) => c.jid === getBareJidFromJid(message.from!))?.name ?? message.from
     const isFromMe = getBareJidFromJid(message.from ?? "") === getBareJidFromJid(this.connection.jid ?? "")
+    const shouldRenderAuthor =
+      !lastMessageAuthor || getBareJidFromJid(lastMessageAuthor) !== getBareJidFromJid(message.from) || !lastMessageInSameMinute
+    console.log(shouldRenderAuthor, message, lastMessageAuthor, lastMessageTimeStamp)
     return html`
-    <chat-message .isFromMe=${isFromMe}>
+    <chat-message .isFromMe=${isFromMe} .date=${new Date(message.stamp)}>
     <span slot="date">${
       lastMessageInSameMinute
         ? nothing
@@ -394,7 +330,7 @@ export class AppComponent extends LitElement {
           ${date}
           `
     }</span>
-    ${html`<span slot="author" title="${message.from ?? ""}">${name}</span>`}
+    ${shouldRenderAuthor ? html`<span slot="author" title="${message.from ?? ""}">${name}</span>` : nothing}
     ${message.body}
     </chat-message>`
   }

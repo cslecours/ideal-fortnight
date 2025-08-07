@@ -1,0 +1,71 @@
+
+  #messages {
+    display:flex;
+    flex-direction: column;
+    overflow-y: auto; height: 100%; padding: 0 var(--padding-base);
+    gap: 0.25rem;
+  }
+
+  .header-slot {
+    display:flex; gap: 1rem; padding: 1rem;
+  }
+  .list-slot{
+    height:100%; display:flex; flex-direction: column; overflow-y: overlay; justify-content: stretch;
+  }
+
+  .subroute-slot {
+    height:100%; display:flex; flex-direction: column; overflow-y: overlay;
+  }
+
+  #user-menu button {
+    text-align:left;
+  }
+
+  #user-menu:popover-open {
+    display:flex;
+    flex-direction: column;
+    justify-items: stretch;
+    justify-content: stretch;
+    gap: 4px;
+    min-width: 200px;
+    height: auto;
+    position: absolute;
+    inset: unset;
+    top: 40px;
+    left: 1rem;
+    border: none;
+    
+  }
+
+  .form {
+    border-top: 1px solid #ccc;
+    padding: var(--padding-base);
+  }
+
+  .form-line {
+    display:flex;
+    flex-direction:row;
+    gap: 1rem;
+  }
+
+  button {
+      --background-color: var(--button-background-color-secondary);
+      --color: var(--button-text-color);
+
+      font-family: var(--font-family);
+      
+      background: var(--background-color);
+      color: var(--color);
+      border-radius: var(--button-border-radius);
+      border: 1px solid var(--border-color);
+      padding: var(--padding-base);
+
+      &:hover {
+        background: oklch(from var(--background-color) calc(l - 0.1) c h);
+      }
+      
+      &[variant="primary"] {
+        --background-color: var(--button-background-color);
+        --color: var(--button-text-color);
+      }
+    }

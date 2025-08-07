@@ -8,15 +8,25 @@ export class ChatMessage extends LitElement {
     display:block;
   }
     .message-bubble {
-        padding: var(--padding-base); border-radius: var(--chat-bubble-radius);  max-width:var(--chat-bubble-max-width); 
+      padding: var(--padding-base); 
+      border-radius: var(--chat-bubble-radius);  
+      max-width:var(--chat-bubble-max-width); 
+
+      .mine & {
+        background-color: var(--chat-bubble-mine);
+      }
+      .other & {
+        background-color: var(--chat-bubble-other);
+      }
     }
 
-    .mine {
-      background-color: var(--chat-bubble-mine);
+    .mine{
+      display:flex;
+      flex-direction: row-reverse;
     }
-
-    .other {
-      background-color: var(--chat-bubble-other);
+    .other{
+      display:flex;
+      flex-direction: row;
     }
 
     .date {
@@ -25,27 +35,25 @@ export class ChatMessage extends LitElement {
     }
 
     .author {
-      font-size:80%; display:flex;
+      font-size:80%;
+      color: var(--chat-bubble-author);
     }
     `
+  @property({ attribute: false }) date: Date | undefined
   @property({ type: Boolean, attribute: "from-me" }) isFromMe = false
 
   render() {
     return html`
-    <div>
-    </span>  
-    <div class="date">
-          <slot name="date"></slot>
-    </div>
-    <div class="message" style="display:flex; flex-direction: ${this.isFromMe ? "row-reverse" : "row"};">
-      <div class="author" style=" flex-direction: ${this.isFromMe ? "row-reverse" : "row"};"></div>
-        <slot name="author"></slot>
+    <div title="${this.date?.toISOString() ?? ""}">
+      <div class="date">
+        <slot name="date"></slot>
       </div>
-      <div class="content" style="display:flex; flex-direction: ${this.isFromMe ? "row-reverse" : "row"};">
-        <div class="message-bubble ${this.isFromMe ? "mine" : "other"}">
+      <div class="author ${this.isFromMe ? "mine" : "other"}"><slot name="author"></slot></div>
+      <div class="message ${this.isFromMe ? "mine" : "other"}">
+        <div class="message-bubble">
           <slot></slot>
         </div>
-      </div>
+    </div>
     </div>`
   }
 }

@@ -1,17 +1,17 @@
 /// <reference types="vite/client" />
 
-import { LitElement, html, css, nothing, type PropertyValues, unsafeCSS } from "lit"
+import { css, html, LitElement, nothing, type PropertyValues, unsafeCSS } from "lit"
 import { customElement, state } from "lit/decorators.js"
-import { withCarbons } from "../../lib/xmpp/plugins/Carbon"
-import { withStreamManagement } from "../../lib/xmpp/plugins/StreamManagement"
-import { XMPPConnection } from "../../lib/xmpp/XMPPConnection"
-import { getBareJidFromJid, getDomain, getNodeFromJid, getResourceFromJid } from "../../lib/xmpp/jid"
-import { Roster, type RosterItem } from "../../lib/xmpp/roster/RosterPlugin"
 import { createElement } from "../../lib/xml/createElement"
-import { DiscoPlugin } from "../../lib/xmpp/disco/discoPlugin"
-import { MessageArchiveManagementPlugin, type QueryResult } from "../../lib/xmpp/plugins/MessageArchive"
-import { render } from "../../lib/xml/render"
 import { parseXml } from "../../lib/xml/parseXml"
+import { render } from "../../lib/xml/render"
+import { DiscoPlugin } from "../../lib/xmpp/disco/discoPlugin"
+import { getBareJidFromJid, getDomain, getNodeFromJid, getResourceFromJid } from "../../lib/xmpp/jid"
+import { withCarbons } from "../../lib/xmpp/plugins/Carbon"
+import { MessageArchiveManagementPlugin, type QueryResult } from "../../lib/xmpp/plugins/MessageArchive"
+import { withStreamManagement } from "../../lib/xmpp/plugins/StreamManagement"
+import { Roster, type RosterItem } from "../../lib/xmpp/roster/RosterPlugin"
+import { XMPPConnection } from "../../lib/xmpp/XMPPConnection"
 import styles from "./AppComponent.styles.css?inline"
 import "./AppLayout"
 import "./AuthForm"
@@ -242,8 +242,7 @@ export class AppComponent extends LitElement {
     return html`
       <div id="messages">
         ${
-          this.result &&
-          this.result.hasNextPage &&
+          this.result?.hasNextPage &&
           html`<div><button @click=${() => {
             const previousPageParams = this.result?.previousPageParams() ?? false
             if (typeof previousPageParams === "object") {

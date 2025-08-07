@@ -1,4 +1,4 @@
-import { LitElement, html, css } from "lit"
+import { css, html, LitElement } from "lit"
 import { customElement, property } from "lit/decorators.js"
 import type { RosterItem } from "../../../lib/xmpp/roster/RosterPlugin"
 import "./RosterItem"

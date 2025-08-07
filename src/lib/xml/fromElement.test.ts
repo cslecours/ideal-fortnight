@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest"
 import { Namespaces } from "../xmpp/namespaces"
 import { fromElement } from "./fromElement"
 import { parseXml } from "./parseXml"
@@ -8,9 +9,9 @@ describe("fromElement", () => {
     const element = parseXml(xml)
     const result = fromElement(element)
     expect(result).toStrictEqual({
-      "tagName": "stream:features",
+      tagName: "stream:features",
       "xmlns:stream": Namespaces.STREAM,
-      "children": [
+      children: [
         {
           tagName: "bind",
           xmlns: Namespaces.BIND,
@@ -48,9 +49,9 @@ describe("fromElement", () => {
     const element = parseXml(xml)
     const result = fromElement(element)
     expect(result).toStrictEqual({
-      "tagName": "stream:features",
+      tagName: "stream:features",
       "xmlns:stream": Namespaces.STREAM,
-      "mechanisms": { items: ["PLAIN"], xmlns: Namespaces.SASL, tagName: "mechanisms" },
+      mechanisms: { items: ["PLAIN"], xmlns: Namespaces.SASL, tagName: "mechanisms" },
     })
   })
 })

@@ -1,6 +1,7 @@
 import { featureDetection, hasFeature, isStreamFeatures } from "./featureDetection"
 import { Namespaces } from "../namespaces"
 import { parseXml } from "../../xml/parseXml"
+import { describe, it, expect } from "vitest"
 
 describe("featureDetection", () => {
   it("works", () => {

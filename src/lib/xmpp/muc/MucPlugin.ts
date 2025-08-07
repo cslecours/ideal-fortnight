@@ -13,7 +13,10 @@ const MUC_ROOMCONF = `${namespacePrefix}#roomconfig`
 const MUC_REGISTER = `jabber:iq:register`
 
 export class MucSubPlugin {
-  public constructor(private xmpp: XMPPPluginAPI, private context: { mucDomain: string }) {}
+  public constructor(
+    private xmpp: XMPPPluginAPI,
+    private context: { mucDomain: string }
+  ) {}
 
   async getRoomOccupants(roomJid: string) {
     return this.xmpp.sendIq("get", { to: roomJid }, discoItemsQueryStanza())

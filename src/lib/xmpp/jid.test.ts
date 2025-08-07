@@ -1,3 +1,5 @@
+import { describe, expect, it } from "vitest"
+
 import { getDomain } from "./jid"
 
 describe("jid", () => {

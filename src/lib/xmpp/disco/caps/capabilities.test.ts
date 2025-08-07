@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest"
 import { buildCapabilities, toVerHash } from "./capabilities"
 
 describe("capabilities", () => {

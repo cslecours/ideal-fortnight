@@ -3,7 +3,10 @@ import { XMPPPluginAPI } from "../XMPP.api"
 import { getRoomsSubscriptions, subscribeToRoom, unsubscribeFromRoom } from "./queries"
 
 export class MucSubPlugin {
-  public constructor(private xmpp: XMPPPluginAPI, private context: { mucDomain: string }) {}
+  public constructor(
+    private xmpp: XMPPPluginAPI,
+    private context: { mucDomain: string }
+  ) {}
 
   async subscribeToMucSub(roomJid: string, nick?: string) {
     return this.xmpp.sendIq("set", { to: roomJid }, subscribeToRoom(nick))

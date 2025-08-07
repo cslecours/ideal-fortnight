@@ -8,7 +8,7 @@ import { authStanza } from "./XmlAuthMessages"
 
 export async function doAuth(xmpp: XMPPPluginAPI, mechanisms: string[], auth: AuthData) {
   const authMechanism: Record<string, typeof plainAuthChallenge> = {
-    "PLAIN": plainAuthChallenge,
+    PLAIN: plainAuthChallenge,
     "X-OAUTH2": xOauth2Challenge,
   }
 

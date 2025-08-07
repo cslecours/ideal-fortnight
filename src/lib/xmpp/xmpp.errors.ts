@@ -57,7 +57,10 @@ export type ErrorType = "cancel" | "continue" | "modify" | "auth" | "wait"
 export class StanzaError extends Error {
   name = "StanzaError"
 
-  constructor(public errorType: ErrorType, public definedCondition: DefinedConditions) {
+  constructor(
+    public errorType: ErrorType,
+    public definedCondition: DefinedConditions
+  ) {
     super(`${errorType} caused by ${definedCondition}`)
   }
 }

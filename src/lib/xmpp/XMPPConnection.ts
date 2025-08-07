@@ -1,21 +1,21 @@
-import { ConnectionStatus } from "../websocket/websocket.models"
-import { Websocket } from "../websocket/websocket"
-import { render } from "../xml/render"
-import { iqStanza, IqStanzaAttrs, presenceStanza } from "./stanza"
+import { BehaviorSubject, firstValueFrom, identity, type Observable, Subject, Subscription } from "rxjs"
 import { filter, first, map, tap, timeout } from "rxjs/operators"
-import { BehaviorSubject, firstValueFrom, identity, Observable, Subject, Subscription } from "rxjs"
-import { featureDetection, hasFeature, isStreamFeatures } from "./stream/featureDetection"
-import { XmlNode, XmlElement } from "../xml/xmlElement"
-import { Namespaces } from "./namespaces"
-import { isElement } from "../xml/parseXml"
-import { BindError, detectErrors } from "./xmpp.errors"
-import { bindStanza, openStanza } from "./auth/XmlAuthMessages"
-import { xmlStream } from "./xmlStream"
-import { AuthData } from "./auth/auth.models"
-import { doAuth } from "./auth/auth"
-import { getXmlSerializer } from "../xml/shims"
-import { XMPPPluginAPI } from "./XMPP.api"
+import { Websocket } from "../websocket/websocket"
+import { ConnectionStatus } from "../websocket/websocket.models"
 import { createElement } from "../xml/createElement"
+import { isElement } from "../xml/parseXml"
+import { render } from "../xml/render"
+import { getXmlSerializer } from "../xml/shims"
+import type { XmlElement, XmlNode } from "../xml/xmlElement"
+import { doAuth } from "./auth/auth"
+import type { AuthData } from "./auth/auth.models"
+import { bindStanza, openStanza } from "./auth/XmlAuthMessages"
+import { Namespaces } from "./namespaces"
+import { iqStanza, type IqStanzaAttrs, presenceStanza } from "./stanza"
+import { featureDetection, hasFeature, isStreamFeatures } from "./stream/featureDetection"
+import { xmlStream } from "./xmlStream"
+import type { XMPPPluginAPI } from "./XMPP.api"
+import { BindError, detectErrors } from "./xmpp.errors"
 
 export enum XMPPConnectionState {
   None = "none",
@@ -109,7 +109,7 @@ export class XMPPConnection implements XMPPPluginAPI {
     return () => subscription.unsubscribe()
   }
 
-  public onSelfPresence(callback: (e: any) => void) {
+  public onSelfPresence(callback: (e: Element) => void) {
     this.on({ tagName: "presence", xmlns: Namespaces.CLIENT }, (e) => {
       const from = e.getAttribute("from")
       if (from === this.jid) {

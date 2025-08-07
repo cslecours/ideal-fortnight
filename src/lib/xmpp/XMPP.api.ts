@@ -1,6 +1,6 @@
-import { XmlAttributes, XmlElement } from "../xml/xmlElement"
-import { IqStanzaAttrs } from "./stanza"
-import { XMPPConnectionState } from "./XMPPConnection"
+import type { XmlAttributes, XmlElement } from "../xml/xmlElement"
+import type { IqStanzaAttrs } from "./stanza"
+import type { XMPPConnectionState } from "./XMPPConnection"
 
 export interface XMPPPluginAPI {
   context: { domain?: string }

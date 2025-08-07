@@ -1,6 +1,6 @@
 import { fromElement } from "../../xml/fromElement"
-import { XMPPPluginAPI } from "../XMPP.api"
-import { Capabilities } from "./caps/capabilities"
+import type { XMPPPluginAPI } from "../XMPP.api"
+import type { Capabilities } from "./caps/capabilities"
 import { capabilitiesCache } from "./caps/capabilitiesCache"
 import { discoInfoQueryStanza, discoItemsQueryStanza } from "./discoElements"
 import { fromDiscoResult } from "./discoResult"
@@ -9,7 +9,7 @@ export class DiscoPlugin {
   constructor(private xmpp: XMPPPluginAPI) {}
 
   async sendDiscoInfoQuery(to: string, node?: string): Promise<Capabilities> {
-    let ver = undefined
+    let ver
     if (node) {
       ver = node.split("#").pop()
       if (!ver) {

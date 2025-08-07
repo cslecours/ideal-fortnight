@@ -1,5 +1,5 @@
 import { DiscoPlugin } from "../lib/xmpp/disco/discoPlugin"
-import { XMPPConnection, XMPPConnectionState } from "../lib/xmpp/XMPPConnection"
+import { type XMPPConnection, XMPPConnectionState } from "../lib/xmpp/XMPPConnection"
 
 export const discoServerSectionComponent = (connection: XMPPConnection, element: Element) => {
   connection.onConnectionStatusChange((c) => {

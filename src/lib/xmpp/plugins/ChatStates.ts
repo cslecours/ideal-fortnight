@@ -1,5 +1,5 @@
 import { createElement } from "../../xml/createElement"
-import { XMPPPluginAPI } from "../XMPP.api"
+import type { XMPPPluginAPI } from "../XMPP.api"
 
 export class ChatStatesPlugin {
   constructor(private xmpp: XMPPPluginAPI) {}

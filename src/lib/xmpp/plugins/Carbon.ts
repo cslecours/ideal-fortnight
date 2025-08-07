@@ -1,5 +1,5 @@
 import { createElement } from "../../xml/createElement"
-import { XMPPConnection, XMPPConnectionState } from "../XMPPConnection"
+import { type XMPPConnection, XMPPConnectionState } from "../XMPPConnection"
 
 export function withCarbons(connection: XMPPConnection): XMPPConnection {
   connection.onConnectionStatusChange((status) => {

@@ -1,5 +1,5 @@
 import { fromElement } from "../../xml/fromElement"
-import { XMPPPluginAPI } from "../XMPP.api"
+import type { XMPPPluginAPI } from "../XMPP.api"
 import { getRoomsSubscriptions, subscribeToRoom, unsubscribeFromRoom } from "./queries"
 
 export class MucSubPlugin {

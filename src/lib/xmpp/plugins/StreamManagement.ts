@@ -1,7 +1,7 @@
 import { createElement } from "../../xml/createElement"
-import { XmlElement } from "../../xml/xmlElement"
+import type { XmlElement } from "../../xml/xmlElement"
 import { detectErrors } from "../xmpp.errors"
-import { XMPPConnection, XMPPConnectionState } from "../XMPPConnection"
+import { type XMPPConnection, XMPPConnectionState } from "../XMPPConnection"
 const namespace = "urn:xmpp:sm:3"
 
 export const withStreamManagement = (connection: XMPPConnection) => {

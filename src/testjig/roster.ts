@@ -1,5 +1,5 @@
-import { Roster, RosterItem } from "../lib/xmpp/roster/RosterPlugin"
-import { XMPPConnection } from "../lib/xmpp/XMPPConnection"
+import { Roster, type RosterItem } from "../lib/xmpp/roster/RosterPlugin"
+import type { XMPPConnection } from "../lib/xmpp/XMPPConnection"
 
 function renderRoster(roster: RosterItem[], element: Element) {
   element.innerHTML = `<table><caption>Roster</caption>

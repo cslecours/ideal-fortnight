@@ -1,6 +1,6 @@
 import { createElement } from "../../xml/createElement"
 import { isElement } from "../../xml/parseXml"
-import { XMPPPluginAPI } from "../XMPP.api"
+import type { XMPPPluginAPI } from "../XMPP.api"
 
 // https://xmpp.org/extensions/xep-0054.html
 export class VCardTempPlugin {

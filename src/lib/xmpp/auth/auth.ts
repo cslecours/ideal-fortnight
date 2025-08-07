@@ -1,8 +1,8 @@
 import { isElement } from "../../xml/parseXml"
 import { Namespaces } from "../namespaces"
-import { XMPPPluginAPI } from "../XMPP.api"
+import type { XMPPPluginAPI } from "../XMPP.api"
 import { SASLError } from "../xmpp.errors"
-import { AuthData } from "./auth.models"
+import type { AuthData } from "./auth.models"
 import { plainAuthChallenge, xOauth2Challenge } from "./sasl"
 import { authStanza } from "./XmlAuthMessages"
 

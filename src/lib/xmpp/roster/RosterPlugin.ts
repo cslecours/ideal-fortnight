@@ -4,7 +4,7 @@ import { isElement } from "../../xml/parseXml"
 import { detectErrors } from "../xmpp.errors"
 import { Namespaces } from "./../namespaces"
 import { queryStanzaPart } from "./../stanza"
-import { XMPPPluginAPI } from "./../XMPP.api"
+import type { XMPPPluginAPI } from "./../XMPP.api"
 import { rosterSet } from "./rosterStanzas"
 
 export interface RosterItem {

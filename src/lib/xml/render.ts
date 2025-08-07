@@ -1,5 +1,5 @@
 import { getDummyXMLDomDocument, getXmlSerializer } from "./shims"
-import { XmlNode } from "./xmlElement"
+import type { XmlNode } from "./xmlElement"
 
 export function createDocumentElement(stanza: XmlNode, doc = getDummyXMLDomDocument()): Element | Element[] | Text {
   if (typeof stanza === "string") {

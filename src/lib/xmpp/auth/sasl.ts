@@ -1,5 +1,5 @@
 import { toB64 } from "../../crypto/b64"
-import { AuthData } from "./auth.models"
+import type { AuthData } from "./auth.models"
 
 export function plainAuthChallenge({ authcid, authzid, domain, pass }: AuthData) {
   // Only include authzid if it differs from authcid.

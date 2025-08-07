@@ -1,4 +1,4 @@
-import { XmlNode, XmlElement, XmlAttributes } from "./xmlElement"
+import type { XmlNode, XmlElement, XmlAttributes } from "./xmlElement"
 
 export function createElement<T extends XmlAttributes>(tagName: string, attrs?: T, children?: XmlNode): XmlElement {
   return {

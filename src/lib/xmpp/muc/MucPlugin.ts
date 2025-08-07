@@ -2,8 +2,8 @@ import { createElement } from "../../xml/createElement"
 import { discoInfoQueryStanza, discoItemsQueryStanza } from "../disco/discoElements"
 import { Namespaces } from "../namespaces"
 import { queryStanzaPart } from "../stanza"
-import { XMPPPluginAPI } from "../XMPP.api"
-import { RoomAffiliation } from "./queries"
+import type { XMPPPluginAPI } from "../XMPP.api"
+import type { RoomAffiliation } from "./queries"
 
 const namespacePrefix = "http://jabber.org/protocol/muc"
 const MUC_OWNER = `${namespacePrefix}#owner`

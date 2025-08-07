@@ -1,5 +1,5 @@
 import { createElement as h } from "../xml/createElement"
-import { XmlNode } from "../xml/xmlElement"
+import type { XmlNode } from "../xml/xmlElement"
 import { Namespaces } from "./namespaces"
 
 export type IqStanzaAttrs = { id?: string; to?: string; from?: string }

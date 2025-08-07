@@ -1,6 +1,6 @@
 import { LitElement, html, css } from "lit"
 import { customElement, property } from "lit/decorators.js"
-import { RosterItem } from "../../../lib/xmpp/roster/RosterPlugin"
+import type { RosterItem } from "../../../lib/xmpp/roster/RosterPlugin"
 import "./RosterItem"
 
 @customElement("roster-list")

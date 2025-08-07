@@ -2,7 +2,7 @@ import { loadTokens } from "./components/design-system/loadTokens"
 loadTokens()
 
 import "./components/AppComponent.js"
-import { AppComponent } from "./components/AppComponent.js"
+import type { AppComponent } from "./components/AppComponent.js"
 
 const appElement = document.getElementById("app")
 if (appElement) {

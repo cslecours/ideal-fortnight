@@ -1,10 +1,10 @@
 import { createElement } from "../../xml/createElement"
 import { isElement } from "../../xml/parseXml"
-import { XmlElement } from "../../xml/xmlElement"
+import type { XmlElement } from "../../xml/xmlElement"
 import { Namespaces } from "../namespaces"
 import { iqStanza, queryStanzaPart } from "../stanza"
 import { detectErrors } from "../xmpp.errors"
-import { XMPPConnection } from "../XMPPConnection"
+import type { XMPPConnection } from "../XMPPConnection"
 
 const xmlns = "urn:xmpp:mam:2"
 

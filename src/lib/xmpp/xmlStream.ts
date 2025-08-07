@@ -1,4 +1,4 @@
-import { map, Observable } from "rxjs"
+import { map, type Observable } from "rxjs"
 import { parseXml } from "../xml/parseXml"
 
 export function xmlStream(message$: Observable<string>): Observable<Element> {

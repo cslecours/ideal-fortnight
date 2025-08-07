@@ -13,7 +13,7 @@
     "attributePosition": "auto",
     "bracketSpacing": true
   },
-  "assist": { "actions": { "source": { "organizeImports": "on" } } },
+  "assist": { "actions": { "source": { "organizeImports": "on", "recommended": true } } },
   "linter": {
     "enabled": true,
     "rules": {

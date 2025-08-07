@@ -17,6 +17,7 @@ import "./AppLayout"
 import "./AuthForm"
 import "./Roster/RosterList"
 import "./ChatMessage"
+import "./DiscoServerSection"
 
 @customElement("app-component")
 export class AppComponent extends LitElement {
@@ -173,7 +174,8 @@ export class AppComponent extends LitElement {
               ${this.renderRoster()}
             </div>
             <div slot="subroute" class="subroute-slot">
-              ${this.renderChatScreen()}
+              <disco-server-section .connection=${this.connection}></disco-server-section>
+              <!-- ${this.renderChatScreen()} -->
             </div>
             </div>
             </app-layout>

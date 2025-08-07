@@ -11,10 +11,10 @@ import { doAuth } from "./auth/auth"
 import type { AuthData } from "./auth/auth.models"
 import { bindStanza, openStanza } from "./auth/XmlAuthMessages"
 import { Namespaces } from "./namespaces"
-import { iqStanza, type IqStanzaAttrs, presenceStanza } from "./stanza"
+import { type IqStanzaAttrs, iqStanza, presenceStanza } from "./stanza"
 import { featureDetection, hasFeature, isStreamFeatures } from "./stream/featureDetection"
-import { xmlStream } from "./xmlStream"
 import type { XMPPPluginAPI } from "./XMPP.api"
+import { xmlStream } from "./xmlStream"
 import { BindError, detectErrors } from "./xmpp.errors"
 
 export enum XMPPConnectionState {

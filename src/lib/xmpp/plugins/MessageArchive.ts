@@ -1,5 +1,4 @@
 import { createElement } from "../../xml/createElement"
-import { isElement } from "../../xml/parseXml"
 import type { XmlElement } from "../../xml/xmlElement"
 import { Namespaces } from "../namespaces"
 import { iqStanza, queryStanzaPart } from "../stanza"
